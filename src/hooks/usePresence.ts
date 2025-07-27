@@ -12,8 +12,8 @@ export const usePresence = (room: string) => {
     const joinSession = async () => {
       try {
         const newSession = await Multisynq.Session.join({
-          apiKey: '2bM9si987s2y1JmC1RVV42EPPhaxFFrjqezB5ZJiyA', // Replace with your API key
-          appId: 'io.multisynq.typing-game',
+          apiKey: import.meta.env.VITE_MULTISYNQ_API_KEY,
+          appId: import.meta.env.VITE_MULTISYNQ_APP_ID,
           name: room,
           password: 'typing-game-2024',
           model: PresenceModel,
