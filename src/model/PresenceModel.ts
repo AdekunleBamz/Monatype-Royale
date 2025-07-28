@@ -19,13 +19,13 @@ export class PresenceModel extends Model {
   handlePlayerJoin(player: Player) {
     if (!this.players.find(p => p.id === player.id && p.room === player.room)) {
       this.players.push(player);
-      this.publish('room', 'presence:updated', this.players);
+      this.publish('room', 'presence:updated', this.getPlayersInRoom(player.room));
     }
   }
 
   handlePlayerLeave(player: Player) {
     this.players = this.players.filter(p => !(p.id === player.id && p.room === player.room));
-    this.publish('room', 'presence:updated', this.players);
+    this.publish('room', 'presence:updated', this.getPlayersInRoom(player.room));
   }
 
   // Get players for a specific room
