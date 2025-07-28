@@ -8,7 +8,7 @@ export const Lobby: React.FC = () => {
   const [name, setName] = useState<string>('');
   const [room, setRoom] = useState<string>('');
   const [currentRoom, setCurrentRoom] = useState<string>('');
-  const { players, join } = usePresence(currentRoom);
+  const { players, isConnected, error, leaveRoom } = usePresence(currentRoom, name);
   const [mode, setMode] = useState<'create' | 'join'>('create');
   const [createdRoom, setCreatedRoom] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -40,8 +40,7 @@ export const Lobby: React.FC = () => {
       }
       
       setCurrentRoom(roomToJoin);
-      join(name.trim());
-
+      // The usePresence hook now handles joining automatically
     } catch (error) {
       console.error('Error joining room:', error);
       alert('Failed to join room. Please try again.');

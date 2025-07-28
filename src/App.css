@@ -127,6 +127,9 @@ button:focus-visible {
   padding: 2rem;
   border-radius: 12px;
   margin-bottom: 2rem;
+  max-width: 400px; /* Limit width */
+  margin-left: auto; /* Center the form */
+  margin-right: auto; /* Center the form */
 }
 
 .form-group {
