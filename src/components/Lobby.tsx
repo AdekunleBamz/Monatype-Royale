@@ -7,8 +7,7 @@ const generateRoomId = (): string => Math.random().toString(36).substring(2, 8).
 export const Lobby: React.FC = () => {
   const [name, setName] = useState<string>('');
   const [room, setRoom] = useState<string>('');
-  const [currentRoom, setCurrentRoom] = useState<string>('');
-  const { players, isConnected, error, leaveRoom } = usePresence(currentRoom, name);
+  const { players, isConnected, error, leaveRoom } = usePresence(room, name);
   const [mode, setMode] = useState<'create' | 'join'>('create');
   const [createdRoom, setCreatedRoom] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -29,18 +28,13 @@ export const Lobby: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      let roomToJoin: string;
       if (mode === 'create') {
         const newRoom = generateRoomId();
+        setRoom(newRoom);
         setCreatedRoom(newRoom);
-        roomToJoin = newRoom;
-      } else {
-        setCreatedRoom(null);
-        roomToJoin = room.trim().toUpperCase();
       }
-      
-      setCurrentRoom(roomToJoin);
-      // The usePresence hook now handles joining automatically
+      // For 'join' mode, the room state is already set by the input field
+      // The usePresence hook will automatically join when the room is set.
     } catch (error) {
       console.error('Error joining room:', error);
       alert('Failed to join room. Please try again.');
@@ -49,13 +43,13 @@ export const Lobby: React.FC = () => {
     }
   };
 
-  const displayPlayers = currentRoom ? players : [];
+  const displayPlayers = room ? players : [];
 
   return (
     <div className="lobby">
       <h1>Multiplayer Lobby</h1>
       
-      {!currentRoom && (
+      {!room && (
         <>
           <div className="mode-selector">
             <button
@@ -135,13 +129,13 @@ export const Lobby: React.FC = () => {
 
       <div className="player-list">
         <h3>
-          {currentRoom ? `Players in Room ${currentRoom}:` : 'Players:'} 
+          {room ? `Players in Room ${room}:` : 'Players:'} 
           <span className="player-count">({displayPlayers.length})</span>
         </h3>
         
         {displayPlayers.length === 0 ? (
           <p className="no-players">
-            {currentRoom ? 'Waiting for players to join...' : 'No players online'}
+            {room ? 'Waiting for players to join...' : 'No players online'}
           </p>
         ) : (
           <ul className="players">
