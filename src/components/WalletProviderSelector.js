@@ -16,7 +16,7 @@ const WalletProviderSelector = ({ onProviderSelected }) => {
         };
     }, []);
     const handleProviderSelect = (provider) => {
-        const web3Provider = new ethers.providers.Web3Provider(provider);
+        const web3Provider = new ethers.BrowserProvider(provider);
         setSelectedProvider(provider);
         onProviderSelected(web3Provider);
     };

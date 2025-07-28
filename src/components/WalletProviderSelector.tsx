@@ -7,7 +7,7 @@ declare global {
   }
 }
 
-const WalletProviderSelector: React.FC<{ onProviderSelected: (provider: ethers.providers.Web3Provider) => void }> = ({ onProviderSelected }) => {
+const WalletProviderSelector: React.FC<{ onProviderSelected: (provider: ethers.BrowserProvider) => void }> = ({ onProviderSelected }) => {
   const [providers, setProviders] = useState<any[]>([]);
   const [selectedProvider, setSelectedProvider] = useState<any | null>(null);
 
@@ -26,7 +26,7 @@ const WalletProviderSelector: React.FC<{ onProviderSelected: (provider: ethers.p
   }, []);
 
   const handleProviderSelect = (provider: any) => {
-    const web3Provider = new ethers.providers.Web3Provider(provider);
+    const web3Provider = new ethers.BrowserProvider(provider);
     setSelectedProvider(provider);
     onProviderSelected(web3Provider);
   };
