@@ -17,14 +17,18 @@ export class PresenceModel extends Model {
   }
 
   handlePlayerJoin(player: Player) {
+    // Add the player if they are not already in the list for that room
     if (!this.players.find(p => p.id === player.id && p.room === player.room)) {
       this.players.push(player);
-      this.publish('room', 'presence:updated', this.getPlayersInRoom(player.room));
     }
+    // Always publish the full list of players for the specific room
+    this.publish('room', 'presence:updated', this.getPlayersInRoom(player.room));
   }
 
   handlePlayerLeave(player: Player) {
+    // Filter out the player who left
     this.players = this.players.filter(p => !(p.id === player.id && p.room === player.room));
+    // Always publish the updated list of players for that room
     this.publish('room', 'presence:updated', this.getPlayersInRoom(player.room));
   }
 

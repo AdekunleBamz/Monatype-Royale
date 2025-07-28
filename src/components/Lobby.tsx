@@ -127,6 +127,22 @@ export const Lobby: React.FC = () => {
         </>
       )}
 
+      {room && (
+        <div className="room-controls">
+          <button
+            type="button"
+            onClick={() => {
+              leaveRoom();
+              setRoom('');
+              setCreatedRoom(null);
+            }}
+            className="leave-button"
+          >
+            Leave Room
+          </button>
+        </div>
+      )}
+
       <div className="player-list">
         <h3>
           {room ? `Players in Room ${room}:` : 'Players:'} 
