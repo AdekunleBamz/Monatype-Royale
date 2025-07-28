@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/AppComponent.tsx","./src/AppShell.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/Lobby.tsx","./src/components/WalletProviderSelector.tsx","./src/hooks/usePresence.ts","./src/model/PresenceModel.ts","./src/model/index.ts"],"errors":true,"version":"5.8.3"}

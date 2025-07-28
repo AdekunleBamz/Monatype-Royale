@@ -11,6 +11,8 @@ export const usePresence = (room: string) => {
 
     const joinSession = async () => {
       try {
+        console.log('VITE_MULTISYNQ_API_KEY:', import.meta.env.VITE_MULTISYNQ_API_KEY);
+        console.log('VITE_MULTISYNQ_APP_ID:', import.meta.env.VITE_MULTISYNQ_APP_ID);
         const newSession = await Multisynq.Session.join({
           apiKey: import.meta.env.VITE_MULTISYNQ_API_KEY,
           appId: import.meta.env.VITE_MULTISYNQ_APP_ID,
