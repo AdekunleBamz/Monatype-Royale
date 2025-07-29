@@ -33,12 +33,13 @@ export const Lobby: React.FC = () => {
     };
     getWalletInfo();
 
-    if (provider?.provider) {
-      provider.provider.on('accountsChanged', getWalletInfo);
-      return () => {
-        provider.provider.removeListener('accountsChanged', getWalletInfo);
-      };
-    }
+                    if (provider?.provider) {
+                  // Use the correct event listener for Ethers.js v6
+                  provider.provider.on('accountsChanged', () => getWalletInfo());
+                  return () => {
+                    provider.provider.removeListener('accountsChanged', () => getWalletInfo());
+                  };
+                }
   }, [provider]);
 
   return (

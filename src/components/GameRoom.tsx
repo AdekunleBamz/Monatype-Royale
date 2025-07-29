@@ -152,14 +152,18 @@ export const GameRoom: React.FC<GameRoomProps> = ({ provider, walletAddress }) =
       <div style={{ padding: '20px', textAlign: 'center' }}>
         <h2>Game Room Created</h2>
         <div style={{ 
-          backgroundColor: '#f5f5f5', 
+          backgroundColor: '#f8f9fa',
           padding: '20px', 
           borderRadius: '8px',
           margin: '20px 0',
           border: '2px solid #2196F3'
         }}>
-          <h3>Room Code: {roomCode}</h3>
-          <p>Share this code with other players to join your game!</p>
+          <h3 style={{ color: '#000000', fontWeight: 'bold', marginBottom: '10px' }}>
+            Room Code: {roomCode}
+          </h3>
+          <p style={{ color: '#000000', fontWeight: 'bold', fontSize: '16px' }}>
+            Share this code with other players to join your game!
+          </p>
         </div>
         
         <div style={{ marginTop: '20px' }}>

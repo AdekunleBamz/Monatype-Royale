@@ -33,9 +33,13 @@ export const useGameState = (roomId: string, currentPlayer: Player | null) => {
 
     const connectToGame = async () => {
       try {
-        const response = await fetch('/api/key');
-        const data = await response.json();
-        const apiKey = data.apiKey;
+        console.log('Multisynq Game State version:', import.meta.env.VITE_MULTISYNQ_API_KEY ? 'API Key available' : 'API Key missing');
+        
+        // Use the API key directly from environment variable
+        const apiKey = import.meta.env.VITE_MULTISYNQ_API_KEY;
+        if (!apiKey) {
+          throw new Error('Multisynq API key not found');
+        }
         
         const newSession = await Session.join({
           apiKey,
