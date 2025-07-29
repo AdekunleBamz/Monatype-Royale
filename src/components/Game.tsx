@@ -88,7 +88,19 @@ export const Game: React.FC<GameProps> = ({ provider, currentPlayer, players, on
   };
 
   if (!currentPlayer) {
-    return <div>Please connect your wallet to play.</div>;
+    return (
+      <div style={{ 
+        textAlign: 'center', 
+        padding: '20px',
+        backgroundColor: '#fff3cd',
+        border: '1px solid #ffeaa7',
+        borderRadius: '8px'
+      }}>
+        <p style={{ color: '#856404', margin: '0' }}>
+          <strong>Please connect your wallet to play.</strong>
+        </p>
+      </div>
+    );
   }
 
   return (

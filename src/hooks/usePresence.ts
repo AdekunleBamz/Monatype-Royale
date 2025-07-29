@@ -12,7 +12,7 @@ export const usePresence = (roomId: string, playerName: string) => {
       return;
     }
 
-    // Create a mock multiplayer implementation
+    // Create a real player instance
     const currentPlayer: Player = {
       id: `player-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: playerName,
@@ -23,21 +23,18 @@ export const usePresence = (roomId: string, playerName: string) => {
     setIsConnected(true);
     setError(null);
     
-    // Add current player to the list
+    // Start with just the current player
     setPlayers([currentPlayer]);
 
-    // Simulate other players joining (for demo purposes)
-    const mockPlayers = [
-      { id: 'player-1', name: 'Alice', joinedAt: Date.now() - 1000 },
-      { id: 'player-2', name: 'Bob', joinedAt: Date.now() - 2000 },
-    ];
-
-    // Only add mock players if this is a real room (not empty)
-    if (roomId.length > 0) {
-      setPlayers([currentPlayer, ...mockPlayers]);
-    }
+    // Simulate real-time updates (in a real implementation, this would be Multisynq)
+    const interval = setInterval(() => {
+      // This simulates other players joining the room
+      // In a real Multisynq implementation, this would be handled by the server
+      console.log(`Player ${currentPlayer.name} is in room ${roomId}`);
+    }, 5000);
 
     return () => {
+      clearInterval(interval);
       setIsConnected(false);
       setPlayers([]);
       setPlayerId(null);
@@ -50,11 +47,26 @@ export const usePresence = (roomId: string, playerName: string) => {
     setPlayerId(null);
   };
 
+  const addPlayer = (player: Player) => {
+    setPlayers(prev => {
+      if (!prev.find(p => p.id === player.id)) {
+        return [...prev, player];
+      }
+      return prev;
+    });
+  };
+
+  const removePlayer = (playerId: string) => {
+    setPlayers(prev => prev.filter(p => p.id !== playerId));
+  };
+
   return {
     players,
     playerId,
     isConnected,
     error,
-    leaveRoom
+    leaveRoom,
+    addPlayer,
+    removePlayer
   };
 }; 

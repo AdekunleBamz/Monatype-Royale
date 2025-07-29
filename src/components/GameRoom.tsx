@@ -164,17 +164,34 @@ export const GameRoom: React.FC<GameRoomProps> = ({ provider, walletAddress }) =
         
         <div style={{ marginTop: '20px' }}>
           <h3>Players in Room:</h3>
-          <div style={{ textAlign: 'left', maxWidth: '400px', margin: '0 auto' }}>
-            {players.map(player => (
-              <div key={player.id} style={{ 
-                padding: '10px', 
-                margin: '5px 0', 
-                backgroundColor: '#e3f2fd',
-                borderRadius: '5px'
-              }}>
-                {player.name} {player.id === playerId && '(You)'}
-              </div>
-            ))}
+          <div style={{ 
+            textAlign: 'left', 
+            maxWidth: '400px', 
+            margin: '0 auto',
+            backgroundColor: '#87CEEB',
+            padding: '15px',
+            borderRadius: '8px',
+            border: '2px solid #4682B4'
+          }}>
+            {players.length === 0 ? (
+              <p style={{ color: '#000000', textAlign: 'center', margin: '0' }}>
+                Waiting for players to join...
+              </p>
+            ) : (
+              players.map(player => (
+                <div key={player.id} style={{ 
+                  padding: '10px', 
+                  margin: '5px 0', 
+                  backgroundColor: '#ffffff',
+                  borderRadius: '5px',
+                  border: '1px solid #4682B4',
+                  color: '#000000',
+                  fontWeight: 'bold'
+                }}>
+                  {player.name} {player.id === playerId && '(You)'}
+                </div>
+              ))
+            )}
           </div>
         </div>
         

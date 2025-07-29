@@ -57,22 +57,40 @@ export const useDeposit = (provider: ethers.BrowserProvider | null) => {
         setIsDepositing(false);
         return;
       }
+      
       const signer = await provider.getSigner();
       const rewardsContract = new ethers.Contract(rewardsContractAddress, rewardsContractAbi, signer);
-      const tx = await rewardsContract.deposit({ value: ethers.parseEther("0.2") });
-      await tx.wait();
+      
+      // This will trigger wallet approval prompt
+      const tx = await rewardsContract.deposit({ 
+        value: ethers.parseEther("0.2"),
+        gasLimit: 200000 // Explicit gas limit
+      });
+      
+      console.log("Deposit transaction sent:", tx.hash);
+      console.log("Waiting for confirmation...");
+      
+      const receipt = await tx.wait();
+      console.log("Deposit confirmed:", receipt);
+      
       setHasDeposited(true);
+      setDepositError(null);
     } catch (err: any) {
-      if (err.message && err.message.includes('Block tracker destroyed')) {
+      console.error("Deposit error details:", err);
+      
+      if (err.code === 4001) {
+        setDepositError('Transaction was rejected by user.');
+      } else if (err.message && err.message.includes('Block tracker destroyed')) {
         setDepositError('MetaMask connection error. Please refresh the page and reconnect your wallet.');
+      } else if (err.reason) {
+        setDepositError(`Transaction failed: ${err.reason}`);
       } else {
-        setDepositError(err.reason || err.message || 'Failed to make deposit.');
+        setDepositError(err.message || 'Failed to make deposit. Please try again.');
       }
-      console.error("Failed to make deposit:", err);
     } finally {
       setIsDepositing(false);
     }
   };
 
   return { isDepositing, depositError, hasDeposited, makeDeposit, checkDeposit };
-}; 
+};
