@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 import rewardsAbiJson from '../abi/MonatypeRewards.json';
 
 const rewardsContractAbi = rewardsAbiJson.abi;
-const MONAD_CHAIN_ID = 10143;
+const MONAD_CHAIN_ID = 10143n;
 const rewardsContractAddress = import.meta.env.VITE_REWARDS_CONTRACT_ADDRESS;
 
 export const useDeposit = (provider: ethers.BrowserProvider | null) => {
@@ -22,7 +22,7 @@ export const useDeposit = (provider: ethers.BrowserProvider | null) => {
       const signer = await provider.getSigner();
       const rewardsContract = new ethers.Contract(rewardsContractAddress, rewardsContractAbi, signer);
       const depositAmount = await rewardsContract.deposits(await signer.getAddress());
-      if (BigInt(depositAmount) >= ethers.parseEther("0.2")) {
+      if (depositAmount >= ethers.parseEther("0.2")) {
         setHasDeposited(true);
       }
     } catch (err: any) {
