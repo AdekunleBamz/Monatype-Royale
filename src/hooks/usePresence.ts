@@ -1,50 +1,104 @@
 import { useState, useEffect } from 'react';
-import { Player } from '../model/PresenceModel';
+import { Session, MultisynqSession, View } from '@multisynq/client';
+import { Player, PresenceModel } from '../model/PresenceModel';
 
 export const usePresence = (roomId: string, playerName: string) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [session, setSession] = useState<MultisynqSession<View> | null>(null);
 
   useEffect(() => {
     if (!roomId || !playerName) {
       return;
     }
 
-    // Create a real player instance
-    const currentPlayer: Player = {
-      id: `player-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      name: playerName,
-      joinedAt: Date.now()
+    const connectToRoom = async () => {
+      try {
+        const response = await fetch('/api/key');
+        const data = await response.json();
+        const apiKey = data.apiKey;
+        
+        const newSession = await Session.join({
+          apiKey,
+          appId: import.meta.env.VITE_MULTISYNQ_APP_ID,
+          name: `presence-${roomId}`,
+          password: 'typing-game-2024',
+          model: PresenceModel,
+        });
+
+        setSession(newSession);
+        console.log('Connected to Multisynq');
+
+        const currentPlayer: Player = {
+          id: `player-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: playerName,
+          joinedAt: Date.now()
+        };
+
+        setPlayerId(currentPlayer.id);
+        setIsConnected(true);
+        setError(null);
+
+        // Set initial player
+        setPlayers([currentPlayer]);
+
+        // Subscribe to room events
+        newSession.view.subscribe('presence', 'player:join', (newPlayer: Player) => {
+          console.log('Player joined:', newPlayer);
+          setPlayers(prev => {
+            if (!prev.find(p => p.id === newPlayer.id)) {
+              return [...prev, newPlayer];
+            }
+            return prev;
+          });
+        });
+
+        newSession.view.subscribe('presence', 'player:leave', (playerId: string) => {
+          console.log('Player left:', playerId);
+          setPlayers(prev => prev.filter(p => p.id !== playerId));
+        });
+
+        // Broadcast our presence
+        newSession.view.publish('presence', 'player:join', currentPlayer);
+
+        // Set up periodic presence update
+        const interval = setInterval(() => {
+          newSession.view.publish('presence', 'player:heartbeat', currentPlayer);
+        }, 30000); // Every 30 seconds
+
+        return () => {
+          clearInterval(interval);
+          newSession.view.publish('presence', 'player:leave', currentPlayer.id);
+          newSession.leave();
+        };
+      } catch (err: any) {
+        console.error('Failed to connect to Multisynq:', err);
+        setError(`Failed to connect: ${err.message}`);
+        setIsConnected(false);
+      }
     };
 
-    setPlayerId(currentPlayer.id);
-    setIsConnected(true);
-    setError(null);
-    
-    // Start with just the current player
-    setPlayers([currentPlayer]);
-
-    // Simulate real-time updates (in a real implementation, this would be Multisynq)
-    const interval = setInterval(() => {
-      // This simulates other players joining the room
-      // In a real Multisynq implementation, this would be handled by the server
-      console.log(`Player ${currentPlayer.name} is in room ${roomId}`);
-    }, 5000);
-
+    const cleanup = connectToRoom();
     return () => {
-      clearInterval(interval);
-      setIsConnected(false);
-      setPlayers([]);
-      setPlayerId(null);
+      cleanup.then(cleanupFn => cleanupFn?.());
     };
   }, [roomId, playerName]);
 
-  const leaveRoom = () => {
+  const leaveRoom = async () => {
+    if (session) {
+      try {
+        session.view.publish('presence', 'player:leave', playerId);
+        session.leave();
+      } catch (err) {
+        console.error('Error leaving room:', err);
+      }
+    }
     setIsConnected(false);
     setPlayers([]);
     setPlayerId(null);
+    setSession(null);
   };
 
   const addPlayer = (player: Player) => {
@@ -67,6 +121,7 @@ export const usePresence = (roomId: string, playerName: string) => {
     error,
     leaveRoom,
     addPlayer,
-    removePlayer
+    removePlayer,
+    session
   };
 }; 

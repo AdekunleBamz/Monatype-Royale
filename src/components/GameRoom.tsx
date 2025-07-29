@@ -290,13 +290,14 @@ export const GameRoom: React.FC<GameRoomProps> = ({ provider, walletAddress }) =
   if (mode === 'game') {
     return (
       <div>
-        <Game 
-          provider={provider} 
-          currentPlayer={currentPlayer}
-          players={players}
-          onGameFinish={handleGameFinish}
-          onReset={resetGame}
-        />
+                            <Game
+                      provider={provider}
+                      currentPlayer={currentPlayer}
+                      players={players}
+                      roomId={roomCode}
+                      onGameFinish={handleGameFinish}
+                      onReset={resetGame}
+                    />
       </div>
     );
   }

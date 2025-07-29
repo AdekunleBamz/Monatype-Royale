@@ -1,27 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { useRewards } from '../hooks/useRewards';
+import { useGameState, GameState } from '../hooks/useGameState';
 import { Player } from '../model/PresenceModel';
 
 interface GameProps {
   provider: ethers.BrowserProvider | null;
   currentPlayer: Player | null;
   players: Player[];
+  roomId: string;
   onGameFinish: (winner: Player, loser: Player) => void;
   onReset: () => void;
 }
 
-export const Game: React.FC<GameProps> = ({ provider, currentPlayer, players, onGameFinish, onReset }) => {
-  const [prompt, setPrompt] = useState('The quick brown fox jumps over the lazy dog.');
+export const Game: React.FC<GameProps> = ({ provider, currentPlayer, players, roomId, onGameFinish, onReset }) => {
   const [userInput, setUserInput] = useState('');
-  const [gameStarted, setGameStarted] = useState(false);
-  const [gameFinished, setGameFinished] = useState(false);
-  const [winner, setWinner] = useState<Player | null>(null);
-  const [loser, setLoser] = useState<Player | null>(null);
-  const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [countdown, setCountdown] = useState(5);
 
-  const { isMinting, isSending, error } = useRewards(provider, winner, loser);
+  const { gameState, error: gameError, updatePlayerProgress, finishGame } = useGameState(roomId, currentPlayer);
+  const { isMinting, isSending, error: rewardsError } = useRewards(provider, gameState.winner, gameState.loser);
 
   const sillyPrompts = [
     "My crypto dog dances better than your memecoin",
@@ -37,32 +35,47 @@ export const Game: React.FC<GameProps> = ({ provider, currentPlayer, players, on
   ];
 
   useEffect(() => {
-    if (gameStarted && !gameFinished) {
+    if (gameState.status === 'playing' && gameState.startTime) {
       const interval = setInterval(() => {
-        setElapsedTime(prev => prev + 0.1);
+        const now = Date.now();
+        const elapsed = (now - gameState.startTime!) / 1000;
+        setElapsedTime(elapsed);
       }, 100);
       return () => clearInterval(interval);
     }
-  }, [gameStarted, gameFinished]);
+  }, [gameState.status, gameState.startTime]);
 
-  const startGame = () => {
-    setPrompt(sillyPrompts[Math.floor(Math.random() * sillyPrompts.length)]);
-    setGameStarted(true);
-    setStartTime(Date.now());
-    setElapsedTime(0);
-  };
+  useEffect(() => {
+    if (gameState.status === 'countdown' && gameState.startTime) {
+      const interval = setInterval(() => {
+        const now = Date.now();
+        const timeLeft = Math.max(0, Math.ceil((gameState.startTime! - now) / 1000));
+        setCountdown(timeLeft);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [gameState.status, gameState.startTime]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    if (!gameStarted || gameFinished) return;
+    if (gameState.status !== 'playing') return;
     
     const value = e.target.value;
     setUserInput(value);
     
-    if (value === prompt) {
+    // Calculate progress
+    const progress = (value.length / gameState.currentPrompt.length) * 100;
+    const words = value.split(' ').length;
+    const timeInMinutes = elapsedTime / 60;
+    const wpm = timeInMinutes > 0 ? words / timeInMinutes : 0;
+    
+    // Update progress in real-time
+    if (currentPlayer) {
+      updatePlayerProgress(currentPlayer.id, progress, wpm, 95); // 95% accuracy for now
+    }
+    
+    if (value === gameState.currentPrompt) {
       // Player finished!
-      setGameFinished(true);
       if (currentPlayer) {
-        setWinner(currentPlayer);
         // Find a random opponent as loser
         const opponents = players.filter(p => p.id !== currentPlayer.id);
         const randomLoser = opponents[Math.floor(Math.random() * opponents.length)] || {
@@ -70,7 +83,7 @@ export const Game: React.FC<GameProps> = ({ provider, currentPlayer, players, on
           name: 'Opponent',
           joinedAt: Date.now()
         };
-        setLoser(randomLoser);
+        finishGame(currentPlayer, randomLoser);
         onGameFinish(currentPlayer, randomLoser);
       }
     }
@@ -78,12 +91,8 @@ export const Game: React.FC<GameProps> = ({ provider, currentPlayer, players, on
 
   const resetGame = () => {
     setUserInput('');
-    setGameStarted(false);
-    setGameFinished(false);
-    setWinner(null);
-    setLoser(null);
-    setStartTime(null);
     setElapsedTime(0);
+    setCountdown(5);
     onReset();
   };
 
@@ -107,44 +116,38 @@ export const Game: React.FC<GameProps> = ({ provider, currentPlayer, players, on
     <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
       <h2>Monatype Royale</h2>
       
-      {!gameStarted ? (
+      {gameState.status === 'waiting' ? (
         <div>
           <p>Ready to type your way to victory?</p>
-          <button 
-            onClick={startGame}
-            style={{
-              padding: '15px 30px',
-              fontSize: '18px',
-              backgroundColor: '#4CAF50',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer'
-            }}
-          >
-            Start Game
-          </button>
+          <p>Waiting for other players to join...</p>
         </div>
-      ) : (
+      ) : gameState.status === 'countdown' ? (
+        <div style={{ textAlign: 'center' }}>
+          <h3>Game starting in...</h3>
+          <div style={{ fontSize: '48px', fontWeight: 'bold', color: '#ff6b6b' }}>
+            {countdown}
+          </div>
+        </div>
+      ) : gameState.status === 'playing' ? (
         <div>
           <div style={{ marginBottom: '20px' }}>
             <p><strong>Time:</strong> {elapsedTime.toFixed(1)}s</p>
             <p><strong>Prompt:</strong></p>
-                                    <div style={{
-                          background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #4a90e2 100%)',
-                          padding: '20px',
-                          borderRadius: '10px',
-                          marginBottom: '15px',
-                          fontSize: '20px',
-                          fontWeight: 'bold',
-                          fontStyle: 'italic',
-                          color: '#ffffff',
-                          textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
-                          border: '3px solid #ff6b6b',
-                          boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
-                        }}>
-                          {prompt}
-                        </div>
+            <div style={{
+              background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #4a90e2 100%)',
+              padding: '20px',
+              borderRadius: '10px',
+              marginBottom: '15px',
+              fontSize: '20px',
+              fontWeight: 'bold',
+              fontStyle: 'italic',
+              color: '#ffffff',
+              textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+              border: '3px solid #ff6b6b',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+            }}>
+              {gameState.currentPrompt}
+            </div>
           </div>
           
           <textarea
@@ -160,84 +163,99 @@ export const Game: React.FC<GameProps> = ({ provider, currentPlayer, players, on
               borderRadius: '5px',
               resize: 'vertical'
             }}
-            disabled={gameFinished}
+            disabled={gameState.status !== 'playing'}
           />
           
-                                {gameFinished && winner && (
-                        <div style={{
-                          marginTop: '20px',
-                          padding: '30px',
-                          background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #4a90e2 100%)',
-                          borderRadius: '15px',
-                          textAlign: 'center',
-                          border: '3px solid #ff6b6b',
-                          boxShadow: '0 12px 40px rgba(0,0,0,0.4)'
-                        }}>
-                          <h3 style={{
-                            fontSize: '28px',
-                            fontWeight: 'bold',
-                            fontStyle: 'italic',
-                            color: '#ffffff',
-                            textShadow: '3px 3px 6px rgba(0,0,0,0.7)',
-                            marginBottom: '15px'
-                          }}>
-                            🎉 Congratulations! You won! 🎉
-                          </h3>
-                          <p style={{
-                            fontSize: '18px',
-                            fontWeight: 'bold',
-                            color: '#ffffff',
-                            textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
-                            marginBottom: '10px'
-                          }}>
-                            Time: {elapsedTime.toFixed(1)}s
-                          </p>
-                          {isMinting && (
-                            <p style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '16px' }}>
-                              Minting NFT for loser...
-                            </p>
-                          )}
-                          {isSending && (
-                            <p style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '16px' }}>
-                              Sending reward to winner...
-                            </p>
-                          )}
-                          {error && (
-                            <p style={{ color: '#ff6b6b', fontWeight: 'bold', fontSize: '16px' }}>
-                              Error: {error}
-                            </p>
-                          )}
-                          {!isMinting && !isSending && !error && (
-                            <p style={{
-                              color: '#4ade80',
-                              fontWeight: 'bold',
-                              fontSize: '18px',
-                              textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
-                            }}>
-                              Rewards have been distributed! Winner gets the MON tokens.
-                            </p>
-                          )}
-                          <button
-                            onClick={resetGame}
-                            style={{
-                              marginTop: '20px',
-                              padding: '15px 30px',
-                              backgroundColor: '#ff6b6b',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '8px',
-                              cursor: 'pointer',
-                              fontSize: '16px',
-                              fontWeight: 'bold',
-                              boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
-                            }}
-                          >
-                            Play Again
-                          </button>
-                        </div>
-                      )}
+          {gameState.status === ('finished' as any) && gameState.winner && (
+            <div style={{
+              marginTop: '20px',
+              padding: '30px',
+              background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #4a90e2 100%)',
+              borderRadius: '15px',
+              textAlign: 'center',
+              border: '3px solid #ff6b6b',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.4)'
+            }}>
+              <h3 style={{
+                fontSize: '28px',
+                fontWeight: 'bold',
+                fontStyle: 'italic',
+                color: '#ffffff',
+                textShadow: '3px 3px 6px rgba(0,0,0,0.7)',
+                marginBottom: '15px'
+              }}>
+                🎉 Congratulations! You won! 🎉
+              </h3>
+              <p style={{
+                fontSize: '18px',
+                fontWeight: 'bold',
+                color: '#ffffff',
+                textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+                marginBottom: '10px'
+              }}>
+                Time: {elapsedTime.toFixed(1)}s
+              </p>
+              {isMinting && (
+                <p style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '16px' }}>
+                  Minting NFT for loser...
+                </p>
+              )}
+              {isSending && (
+                <p style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '16px' }}>
+                  Sending reward to winner...
+                </p>
+              )}
+              {rewardsError && (
+                <p style={{ color: '#ff6b6b', fontWeight: 'bold', fontSize: '16px' }}>
+                  Error: {rewardsError}
+                </p>
+              )}
+              {!isMinting && !isSending && !rewardsError && (
+                <p style={{
+                  color: '#4ade80',
+                  fontWeight: 'bold',
+                  fontSize: '18px',
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+                }}>
+                  Rewards have been distributed! Winner gets the MON tokens.
+                </p>
+              )}
+              <button
+                onClick={resetGame}
+                style={{
+                  marginTop: '20px',
+                  padding: '15px 30px',
+                  backgroundColor: '#ff6b6b',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
+                }}
+              >
+                Play Again
+              </button>
+            </div>
+          )}
         </div>
-      )}
+      ) : gameState.status === 'finished' ? (
+        <div style={{ textAlign: 'center' }}>
+          <h3>Game Finished!</h3>
+          <p>Winner: {gameState.winner?.name || 'Unknown'}</p>
+          <button onClick={resetGame} style={{
+            padding: '15px 30px',
+            backgroundColor: '#4CAF50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer'
+          }}>
+            Play Again
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }; 
