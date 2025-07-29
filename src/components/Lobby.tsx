@@ -7,6 +7,7 @@ export const Lobby: React.FC = () => {
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [balance, setBalance] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
     const getWalletInfo = async () => {
@@ -17,11 +18,17 @@ export const Lobby: React.FC = () => {
           setWalletAddress(address);
           const balance = await provider.getBalance(address);
           setBalance(ethers.formatEther(balance));
+          setIsConnected(true);
         } catch (error) {
           console.error("Failed to get wallet info:", error);
           setWalletAddress(null);
           setBalance(null);
+          setIsConnected(false);
         }
+      } else {
+        setWalletAddress(null);
+        setBalance(null);
+        setIsConnected(false);
       }
     };
     getWalletInfo();
@@ -39,7 +46,7 @@ export const Lobby: React.FC = () => {
       <WalletProviderSelector onProviderSelected={setProvider} />
       <h1>Monatype Royale</h1>
 
-      {provider ? (
+      {provider && isConnected ? (
         <div className="wallet-info">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5em', marginBottom: '1rem' }}>
             <span style={{
@@ -68,7 +75,22 @@ export const Lobby: React.FC = () => {
           )}
         </div>
       ) : (
-        <p>Please connect your wallet to continue.</p>
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <div style={{ 
+            backgroundColor: '#fff3cd', 
+            border: '1px solid #ffeaa7', 
+            borderRadius: '8px', 
+            padding: '15px',
+            marginBottom: '20px'
+          }}>
+            <p style={{ margin: '0', color: '#856404' }}>
+              <strong>Wallet Not Connected</strong>
+            </p>
+            <p style={{ margin: '5px 0 0 0', fontSize: '14px', color: '#856404' }}>
+              Please make sure your Monad wallet is connected to continue.
+            </p>
+          </div>
+        </div>
       )}
 
       {/* Show GameRoom when wallet is connected */}

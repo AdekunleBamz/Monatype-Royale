@@ -118,15 +118,21 @@ export const Game: React.FC<GameProps> = ({ provider, currentPlayer, players, on
           <div style={{ marginBottom: '20px' }}>
             <p><strong>Time:</strong> {elapsedTime.toFixed(1)}s</p>
             <p><strong>Prompt:</strong></p>
-            <div style={{ 
-              backgroundColor: '#f5f5f5', 
-              padding: '15px', 
-              borderRadius: '5px',
-              marginBottom: '15px',
-              fontSize: '18px'
-            }}>
-              {prompt}
-            </div>
+                                    <div style={{
+                          background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #4a90e2 100%)',
+                          padding: '20px',
+                          borderRadius: '10px',
+                          marginBottom: '15px',
+                          fontSize: '20px',
+                          fontWeight: 'bold',
+                          fontStyle: 'italic',
+                          color: '#ffffff',
+                          textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+                          border: '3px solid #ff6b6b',
+                          boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+                        }}>
+                          {prompt}
+                        </div>
           </div>
           
           <textarea
@@ -145,38 +151,79 @@ export const Game: React.FC<GameProps> = ({ provider, currentPlayer, players, on
             disabled={gameFinished}
           />
           
-          {gameFinished && winner && (
-            <div style={{ 
-              marginTop: '20px', 
-              padding: '20px', 
-              backgroundColor: '#e8f5e8', 
-              borderRadius: '8px',
-              textAlign: 'center'
-            }}>
-              <h3>🎉 Congratulations! You won! 🎉</h3>
-              <p>Time: {elapsedTime.toFixed(1)}s</p>
-              {isMinting && <p>Minting NFT for loser...</p>}
-              {isSending && <p>Sending reward to winner...</p>}
-              {error && <p style={{ color: 'red' }}>Error: {error}</p>}
-              {!isMinting && !isSending && !error && (
-                <p>Rewards have been distributed! Winner gets the MON tokens.</p>
-              )}
-              <button 
-                onClick={resetGame}
-                style={{
-                  marginTop: '15px',
-                  padding: '10px 20px',
-                  backgroundColor: '#2196F3',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  cursor: 'pointer'
-                }}
-              >
-                Play Again
-              </button>
-            </div>
-          )}
+                                {gameFinished && winner && (
+                        <div style={{
+                          marginTop: '20px',
+                          padding: '30px',
+                          background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #4a90e2 100%)',
+                          borderRadius: '15px',
+                          textAlign: 'center',
+                          border: '3px solid #ff6b6b',
+                          boxShadow: '0 12px 40px rgba(0,0,0,0.4)'
+                        }}>
+                          <h3 style={{
+                            fontSize: '28px',
+                            fontWeight: 'bold',
+                            fontStyle: 'italic',
+                            color: '#ffffff',
+                            textShadow: '3px 3px 6px rgba(0,0,0,0.7)',
+                            marginBottom: '15px'
+                          }}>
+                            🎉 Congratulations! You won! 🎉
+                          </h3>
+                          <p style={{
+                            fontSize: '18px',
+                            fontWeight: 'bold',
+                            color: '#ffffff',
+                            textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+                            marginBottom: '10px'
+                          }}>
+                            Time: {elapsedTime.toFixed(1)}s
+                          </p>
+                          {isMinting && (
+                            <p style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '16px' }}>
+                              Minting NFT for loser...
+                            </p>
+                          )}
+                          {isSending && (
+                            <p style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '16px' }}>
+                              Sending reward to winner...
+                            </p>
+                          )}
+                          {error && (
+                            <p style={{ color: '#ff6b6b', fontWeight: 'bold', fontSize: '16px' }}>
+                              Error: {error}
+                            </p>
+                          )}
+                          {!isMinting && !isSending && !error && (
+                            <p style={{
+                              color: '#4ade80',
+                              fontWeight: 'bold',
+                              fontSize: '18px',
+                              textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+                            }}>
+                              Rewards have been distributed! Winner gets the MON tokens.
+                            </p>
+                          )}
+                          <button
+                            onClick={resetGame}
+                            style={{
+                              marginTop: '20px',
+                              padding: '15px 30px',
+                              backgroundColor: '#ff6b6b',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              fontSize: '16px',
+                              fontWeight: 'bold',
+                              boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
+                            }}
+                          >
+                            Play Again
+                          </button>
+                        </div>
+                      )}
         </div>
       )}
     </div>

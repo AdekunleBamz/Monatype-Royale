@@ -7,7 +7,7 @@ declare global {
   }
 }
 
-const WalletProviderSelector: React.FC<{ onProviderSelected: (provider: ethers.BrowserProvider) => void }> = ({ onProviderSelected }) => {
+const WalletProviderSelector: React.FC<{ onProviderSelected: (provider: ethers.BrowserProvider | null) => void }> = ({ onProviderSelected }) => {
   const [providers, setProviders] = useState<any[]>([]);
   const [selectedProvider, setSelectedProvider] = useState<any | null>(null);
 
@@ -73,8 +73,30 @@ const WalletProviderSelector: React.FC<{ onProviderSelected: (provider: ethers.B
     onProviderSelected(web3Provider);
   };
 
+  const handleDisconnect = () => {
+    setSelectedProvider(null);
+    onProviderSelected(null);
+  };
+
   if (selectedProvider) {
-    return null;
+    return (
+      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <button
+          onClick={handleDisconnect}
+          style={{
+            padding: '10px 20px',
+            fontSize: '16px',
+            backgroundColor: '#f44336',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer'
+          }}
+        >
+          Disconnect Wallet
+        </button>
+      </div>
+    );
   }
 
   return (
