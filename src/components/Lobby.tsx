@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import WalletProviderSelector from './WalletProviderSelector';
 import { ethers } from 'ethers';
-import { useDeposit } from '../hooks/useDeposit';
-import { Game } from './Game';
-import { Player } from '../model/PresenceModel';
+import { GameRoom } from './GameRoom';
 
 export const Lobby: React.FC = () => {
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [balance, setBalance] = useState<string | null>(null);
-  const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
-  const { isDepositing, depositError, hasDeposited, makeDeposit, checkDeposit } = useDeposit(provider);
 
   useEffect(() => {
     const getWalletInfo = async () => {
@@ -29,7 +25,6 @@ export const Lobby: React.FC = () => {
       }
     };
     getWalletInfo();
-    checkDeposit();
 
     if (provider?.provider) {
       provider.provider.on('accountsChanged', getWalletInfo);
@@ -37,20 +32,7 @@ export const Lobby: React.FC = () => {
         provider.provider.removeListener('accountsChanged', getWalletInfo);
       };
     }
-  }, [provider, checkDeposit]);
-
-  // Set current player when wallet is connected
-  useEffect(() => {
-    if (walletAddress) {
-      setCurrentPlayer({
-        id: walletAddress,
-        name: walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4),
-        joinedAt: Date.now()
-      });
-    } else {
-      setCurrentPlayer(null);
-    }
-  }, [walletAddress]);
+  }, [provider]);
 
   return (
     <div className="lobby">
@@ -80,34 +62,6 @@ export const Lobby: React.FC = () => {
             <>
               <p><strong>Address:</strong> {walletAddress}</p>
               <p><strong>Balance:</strong> {balance} MON</p>
-              
-              {!hasDeposited ? (
-                <div>
-                  <button 
-                    onClick={makeDeposit}
-                    disabled={isDepositing}
-                    style={{
-                      padding: '10px 20px',
-                      fontSize: '16px',
-                      backgroundColor: '#4CAF50',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '5px',
-                      cursor: isDepositing ? 'not-allowed' : 'pointer',
-                      opacity: isDepositing ? 0.6 : 1
-                    }}
-                  >
-                    {isDepositing ? 'Processing...' : 'Deposit 0.2 MON'}
-                  </button>
-                  {depositError && (
-                    <p style={{ color: 'red', marginTop: '10px' }}>{depositError}</p>
-                  )}
-                </div>
-              ) : (
-                <div style={{ color: 'green', fontWeight: 'bold' }}>
-                  ✓ Deposit completed! You can now join a game.
-                </div>
-              )}
             </>
           ) : (
             <p>Could not retrieve wallet information. Please ensure your wallet is connected correctly.</p>
@@ -117,10 +71,10 @@ export const Lobby: React.FC = () => {
         <p>Please connect your wallet to continue.</p>
       )}
 
-      {/* Show Game component when player has deposited */}
-      {hasDeposited && currentPlayer && (
+      {/* Show GameRoom when wallet is connected */}
+      {provider && walletAddress && (
         <div style={{ marginTop: '40px' }}>
-          <Game provider={provider} currentPlayer={currentPlayer} />
+          <GameRoom provider={provider} walletAddress={walletAddress} />
         </div>
       )}
     </div>

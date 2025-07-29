@@ -12,9 +12,9 @@ export const usePresence = (roomId: string, playerName: string) => {
       return;
     }
 
-    // For now, create a simple mock implementation
+    // Create a mock multiplayer implementation
     const currentPlayer: Player = {
-      id: `player-${Date.now()}`,
+      id: `player-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: playerName,
       joinedAt: Date.now()
     };
@@ -22,7 +22,20 @@ export const usePresence = (roomId: string, playerName: string) => {
     setPlayerId(currentPlayer.id);
     setIsConnected(true);
     setError(null);
+    
+    // Add current player to the list
     setPlayers([currentPlayer]);
+
+    // Simulate other players joining (for demo purposes)
+    const mockPlayers = [
+      { id: 'player-1', name: 'Alice', joinedAt: Date.now() - 1000 },
+      { id: 'player-2', name: 'Bob', joinedAt: Date.now() - 2000 },
+    ];
+
+    // Only add mock players if this is a real room (not empty)
+    if (roomId.length > 0) {
+      setPlayers([currentPlayer, ...mockPlayers]);
+    }
 
     return () => {
       setIsConnected(false);

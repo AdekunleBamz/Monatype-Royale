@@ -6,9 +6,12 @@ import { Player } from '../model/PresenceModel';
 interface GameProps {
   provider: ethers.BrowserProvider | null;
   currentPlayer: Player | null;
+  players: Player[];
+  onGameFinish: (winner: Player, loser: Player) => void;
+  onReset: () => void;
 }
 
-export const Game: React.FC<GameProps> = ({ provider, currentPlayer }) => {
+export const Game: React.FC<GameProps> = ({ provider, currentPlayer, players, onGameFinish, onReset }) => {
   const [prompt, setPrompt] = useState('The quick brown fox jumps over the lazy dog.');
   const [userInput, setUserInput] = useState('');
   const [gameStarted, setGameStarted] = useState(false);
@@ -60,12 +63,15 @@ export const Game: React.FC<GameProps> = ({ provider, currentPlayer }) => {
       setGameFinished(true);
       if (currentPlayer) {
         setWinner(currentPlayer);
-        // For demo purposes, create a mock loser
-        setLoser({
+        // Find a random opponent as loser
+        const opponents = players.filter(p => p.id !== currentPlayer.id);
+        const randomLoser = opponents[Math.floor(Math.random() * opponents.length)] || {
           id: 'mock-loser',
           name: 'Opponent',
           joinedAt: Date.now()
-        });
+        };
+        setLoser(randomLoser);
+        onGameFinish(currentPlayer, randomLoser);
       }
     }
   };
@@ -78,6 +84,7 @@ export const Game: React.FC<GameProps> = ({ provider, currentPlayer }) => {
     setLoser(null);
     setStartTime(null);
     setElapsedTime(0);
+    onReset();
   };
 
   if (!currentPlayer) {

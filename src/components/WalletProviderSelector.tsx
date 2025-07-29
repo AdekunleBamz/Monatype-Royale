@@ -26,8 +26,8 @@ const WalletProviderSelector: React.FC<{ onProviderSelected: (provider: ethers.B
   }, []);
 
   const handleProviderSelect = async (provider: any) => {
-    const web3Provider = new ethers.BrowserProvider(provider);
     try {
+      // First try to switch to Monad testnet
       await provider.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: '0x279F' }], // 10143 in hex
@@ -42,13 +42,13 @@ const WalletProviderSelector: React.FC<{ onProviderSelected: (provider: ethers.B
               {
                 chainId: '0x279F',
                 chainName: 'Monad Testnet',
-                rpcUrls: ['https://testnet.monad.xyz'],
+                rpcUrls: ['https://testnet-rpc.monad.xyz'],
                 nativeCurrency: {
                   name: 'MON',
                   symbol: 'MON',
                   decimals: 18,
                 },
-                blockExplorerUrls: [''],
+                blockExplorerUrls: ['https://explorer.testnet.monad.xyz'],
               },
             ],
           });
@@ -61,6 +61,14 @@ const WalletProviderSelector: React.FC<{ onProviderSelected: (provider: ethers.B
         return;
       }
     }
+    
+    // Create provider with ENS disabled for Monad testnet
+    const web3Provider = new ethers.BrowserProvider(provider, {
+      name: 'Monad Testnet',
+      chainId: 10143,
+      ensAddress: undefined // Disable ENS
+    });
+    
     setSelectedProvider(provider);
     onProviderSelected(web3Provider);
   };
