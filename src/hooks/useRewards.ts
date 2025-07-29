@@ -7,6 +7,10 @@ const rewardsContractAbi = rewardsAbiJson.abi;
 const MONAD_CHAIN_ID = 10143n;
 const rewardsContractAddress = import.meta.env.VITE_REWARDS_CONTRACT_ADDRESS;
 
+if (!rewardsContractAddress) {
+  throw new Error("VITE_REWARDS_CONTRACT_ADDRESS is not set. Check your .env and restart the dev server.");
+}
+
 export const useRewards = (provider: ethers.BrowserProvider | null, winner: Player | null, loser: Player | null) => {
   const [isMinting, setIsMinting] = useState(false);
   const [isSending, setIsSending] = useState(false);

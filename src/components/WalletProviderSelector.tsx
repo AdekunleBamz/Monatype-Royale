@@ -25,32 +25,48 @@ const WalletProviderSelector: React.FC<{ onProviderSelected: (provider: ethers.B
     };
   }, []);
 
-  const handleProviderSelect = (provider: any) => {
+  const handleProviderSelect = async (provider: any) => {
     const web3Provider = new ethers.BrowserProvider(provider);
+    try {
+      await provider.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x279F' }], // 10143 in hex
+      });
+    } catch (switchError: any) {
+      // This error code indicates that the chain has not been added to MetaMask.
+      if (switchError.code === 4902) {
+        try {
+          await provider.request({
+            method: 'wallet_addEthereumChain',
+            params: [
+              {
+                chainId: '0x279F',
+                chainName: 'Monad Testnet',
+                rpcUrls: ['https://testnet.monad.xyz'],
+                nativeCurrency: {
+                  name: 'MON',
+                  symbol: 'MON',
+                  decimals: 18,
+                },
+                blockExplorerUrls: [''],
+              },
+            ],
+          });
+        } catch (addError) {
+          console.error('Failed to add the network:', addError);
+          return;
+        }
+      } else {
+        console.error('Failed to switch the network:', switchError);
+        return;
+      }
+    }
     setSelectedProvider(provider);
     onProviderSelected(web3Provider);
   };
 
   if (selectedProvider) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
-        <span style={{
-          display: 'inline-block',
-          width: '10px',
-          height: '10px',
-          borderRadius: '50%',
-          background: '#00ff00',
-          boxShadow: '0 0 8px 2px #00ff00',
-          animation: 'blinker 1s linear infinite'
-        }} />
-        <span>Connected to Monad Testnet</span>
-        <style>{`
-          @keyframes blinker {
-            50% { opacity: 0.2; }
-          }
-        `}</style>
-      </div>
-    );
+    return null;
   }
 
   return (

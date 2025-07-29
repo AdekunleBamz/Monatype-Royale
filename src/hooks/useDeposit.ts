@@ -6,6 +6,10 @@ const rewardsContractAbi = rewardsAbiJson.abi;
 const MONAD_CHAIN_ID = 10143n;
 const rewardsContractAddress = import.meta.env.VITE_REWARDS_CONTRACT_ADDRESS;
 
+if (!rewardsContractAddress) {
+  throw new Error("VITE_REWARDS_CONTRACT_ADDRESS is not set. Check your .env and restart the dev server.");
+}
+
 export const useDeposit = (provider: ethers.BrowserProvider | null) => {
   const [isDepositing, setIsDepositing] = useState(false);
   const [depositError, setDepositError] = useState<string | null>(null);
@@ -22,7 +26,9 @@ export const useDeposit = (provider: ethers.BrowserProvider | null) => {
       const signer = await provider.getSigner();
       const rewardsContract = new ethers.Contract(rewardsContractAddress, rewardsContractAbi, signer);
       const depositAmount = await rewardsContract.deposits(await signer.getAddress());
-      if (depositAmount >= ethers.parseEther("0.2")) {
+      
+      // @ts-ignore - Ignoring bigint comparison issue
+      if (BigInt(depositAmount) >= ethers.parseEther("0.2")) {
         setHasDeposited(true);
       }
     } catch (err: any) {
@@ -40,8 +46,10 @@ export const useDeposit = (provider: ethers.BrowserProvider | null) => {
       setDepositError("Please connect your wallet first.");
       return;
     }
+
     setIsDepositing(true);
     setDepositError(null);
+
     try {
       const network = await provider.getNetwork();
       if (network.chainId !== MONAD_CHAIN_ID) {
@@ -67,4 +75,4 @@ export const useDeposit = (provider: ethers.BrowserProvider | null) => {
   };
 
   return { isDepositing, depositError, hasDeposited, makeDeposit, checkDeposit };
-};
+}; 

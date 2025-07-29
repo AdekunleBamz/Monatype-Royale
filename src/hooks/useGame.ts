@@ -21,8 +21,11 @@ export const useGame = (room: string, player: Player) => {
     const joinSession = async () => {
       setError(null);
       try {
+        const response = await fetch('/api/key');
+        const data = await response.json();
+        const apiKey = data.apiKey;
         const newSession = await Session.join({
-          apiKey: import.meta.env.VITE_MULTISYNQ_API_KEY,
+          apiKey,
           appId: import.meta.env.VITE_MULTISYNQ_APP_ID,
           name: `game-${room}`,
           password: 'typing-game-2024',

@@ -1,94 +1,177 @@
 import React, { useState, useEffect } from 'react';
-import { useGame } from '../hooks/useGame';
-import { Player } from '../model/PresenceModel';
-import { GamePlayer } from '../model/GameModel';
-import { useRewards } from '../hooks/useRewards';
 import { ethers } from 'ethers';
+import { useRewards } from '../hooks/useRewards';
+import { Player } from '../model/PresenceModel';
 
 interface GameProps {
-  room: string;
-  player: Player;
-  players: Player[];
   provider: ethers.BrowserProvider | null;
+  currentPlayer: Player | null;
 }
 
-export const Game: React.FC<GameProps> = ({ room, player, players, provider }) => {
-  const { gameState, error, startGame, updatePlayer, finishGame } = useGame(room, player);
-  const [inputValue, setInputValue] = useState('');
+export const Game: React.FC<GameProps> = ({ provider, currentPlayer }) => {
+  const [prompt, setPrompt] = useState('The quick brown fox jumps over the lazy dog.');
+  const [userInput, setUserInput] = useState('');
+  const [gameStarted, setGameStarted] = useState(false);
+  const [gameFinished, setGameFinished] = useState(false);
+  const [winner, setWinner] = useState<Player | null>(null);
+  const [loser, setLoser] = useState<Player | null>(null);
   const [startTime, setStartTime] = useState<number | null>(null);
-  const loser = gameState?.winner ? gameState.players.find(p => p.id !== gameState.winner?.id) : null;
-  const { isMinting, isSending, error: rewardsError } = useRewards(provider, gameState?.winner || null, loser || null);
+  const [elapsedTime, setElapsedTime] = useState(0);
 
+  const { isMinting, isSending, error } = useRewards(provider, winner, loser);
+
+  const sillyPrompts = [
+    "My crypto dog dances better than your memecoin",
+    "Left-curve liquidity lords live lavishly",
+    "The blockchain never sleeps, but my cat does",
+    "Smart contracts are smarter than my ex",
+    "Gas fees are higher than my expectations",
+    "HODLing is not just a strategy, it's a lifestyle",
+    "Wen moon? Wen lambo? Wen peace?",
+    "Diamond hands make diamond profits",
+    "The only thing more volatile than crypto is my mood",
+    "Not financial advice, but definitely life advice"
+  ];
 
   useEffect(() => {
-    if (players.length > 1 && !gameState) {
-      startGame(players);
+    if (gameStarted && !gameFinished) {
+      const interval = setInterval(() => {
+        setElapsedTime(prev => prev + 0.1);
+      }, 100);
+      return () => clearInterval(interval);
     }
-  }, [players, gameState, startGame]);
+  }, [gameStarted, gameFinished]);
 
-  useEffect(() => {
-    if (gameState?.status === 'in-progress' && !startTime) {
-      setStartTime(Date.now());
-    }
-  }, [gameState, startTime]);
+  const startGame = () => {
+    setPrompt(sillyPrompts[Math.floor(Math.random() * sillyPrompts.length)]);
+    setGameStarted(true);
+    setStartTime(Date.now());
+    setElapsedTime(0);
+  };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (!gameStarted || gameFinished) return;
+    
     const value = e.target.value;
-    setInputValue(value);
-
-    if (gameState && gameState.status === 'in-progress') {
-      const prompt = gameState.prompt;
-      const progress = (value.length / prompt.length) * 100;
-      const elapsed = (Date.now() - (startTime || Date.now())) / 1000 / 60; // in minutes
-      const wpm = (value.split(' ').length / elapsed) || 0;
-      const accuracy = ((prompt.startsWith(value) ? value.length : 0) / value.length) * 100 || 0;
-
-      updatePlayer({ id: player.id, progress, wpm, accuracy });
-
-      if (value === prompt) {
-        finishGame(player);
+    setUserInput(value);
+    
+    if (value === prompt) {
+      // Player finished!
+      setGameFinished(true);
+      if (currentPlayer) {
+        setWinner(currentPlayer);
+        // For demo purposes, create a mock loser
+        setLoser({
+          id: 'mock-loser',
+          name: 'Opponent',
+          joinedAt: Date.now()
+        });
       }
     }
   };
 
-  if (error) {
-    return <div className="error">Error: {error}</div>;
-  }
+  const resetGame = () => {
+    setUserInput('');
+    setGameStarted(false);
+    setGameFinished(false);
+    setWinner(null);
+    setLoser(null);
+    setStartTime(null);
+    setElapsedTime(0);
+  };
 
-  if (!gameState) {
-    return <div>Loading game...</div>;
+  if (!currentPlayer) {
+    return <div>Please connect your wallet to play.</div>;
   }
 
   return (
-    <div className="game">
-      <h2>Typing Game</h2>
-      <p><strong>Prompt:</strong> {gameState.prompt}</p>
-      <input
-        type="text"
-        value={inputValue}
-        onChange={handleInputChange}
-        disabled={gameState.status !== 'in-progress'}
-        className="game-input"
-      />
-      <div className="game-players">
-        <h3>Players</h3>
-        <ul>
-          {gameState.players.map((p: GamePlayer) => (
-            <li key={p.id}>
-              {p.name}: {p.progress.toFixed(2)}% | {p.wpm.toFixed(0)} WPM | {p.accuracy.toFixed(0)}%
-            </li>
-          ))}
-        </ul>
-      </div>
-      {gameState.status === 'finished' && gameState.winner && (
-        <div className="game-winner">
-          <h3>Game Over!</h3>
-          <p>Winner: {gameState.winner.name}</p>
-          {isMinting && <p>Minting NFT for the loser...</p>}
-          {isSending && <p>Sending reward to the winner...</p>}
-          {rewardsError && <p className="error">Error sending rewards: {rewardsError}</p>}
+    <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+      <h2>Monatype Royale</h2>
+      
+      {!gameStarted ? (
+        <div>
+          <p>Ready to type your way to victory?</p>
+          <button 
+            onClick={startGame}
+            style={{
+              padding: '15px 30px',
+              fontSize: '18px',
+              backgroundColor: '#4CAF50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer'
+            }}
+          >
+            Start Game
+          </button>
+        </div>
+      ) : (
+        <div>
+          <div style={{ marginBottom: '20px' }}>
+            <p><strong>Time:</strong> {elapsedTime.toFixed(1)}s</p>
+            <p><strong>Prompt:</strong></p>
+            <div style={{ 
+              backgroundColor: '#f5f5f5', 
+              padding: '15px', 
+              borderRadius: '5px',
+              marginBottom: '15px',
+              fontSize: '18px'
+            }}>
+              {prompt}
+            </div>
+          </div>
+          
+          <textarea
+            value={userInput}
+            onChange={handleInputChange}
+            placeholder="Start typing here..."
+            style={{
+              width: '100%',
+              height: '150px',
+              padding: '15px',
+              fontSize: '16px',
+              border: '2px solid #ddd',
+              borderRadius: '5px',
+              resize: 'vertical'
+            }}
+            disabled={gameFinished}
+          />
+          
+          {gameFinished && winner && (
+            <div style={{ 
+              marginTop: '20px', 
+              padding: '20px', 
+              backgroundColor: '#e8f5e8', 
+              borderRadius: '8px',
+              textAlign: 'center'
+            }}>
+              <h3>🎉 Congratulations! You won! 🎉</h3>
+              <p>Time: {elapsedTime.toFixed(1)}s</p>
+              {isMinting && <p>Minting NFT for loser...</p>}
+              {isSending && <p>Sending reward to winner...</p>}
+              {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+              {!isMinting && !isSending && !error && (
+                <p>Rewards have been distributed! Winner gets the MON tokens.</p>
+              )}
+              <button 
+                onClick={resetGame}
+                style={{
+                  marginTop: '15px',
+                  padding: '10px 20px',
+                  backgroundColor: '#2196F3',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer'
+                }}
+              >
+                Play Again
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
-};
+}; 

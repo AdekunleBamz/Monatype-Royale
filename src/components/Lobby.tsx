@@ -1,206 +1,128 @@
 import React, { useState, useEffect } from 'react';
-import { usePresence } from '../hooks/usePresence';
-import { Player } from '../model/PresenceModel';
-import { Game } from './Game';
 import WalletProviderSelector from './WalletProviderSelector';
 import { ethers } from 'ethers';
 import { useDeposit } from '../hooks/useDeposit';
-
-const generateRoomId = (): string => Math.random().toString(36).substring(2, 8).toUpperCase();
+import { Game } from './Game';
+import { Player } from '../model/PresenceModel';
 
 export const Lobby: React.FC = () => {
-  const [name, setName] = useState<string>('');
-  const [room, setRoom] = useState<string>('');
-  const { players, playerId, isConnected, error, leaveRoom } = usePresence(room, name);
-  const [mode, setMode] = useState<'create' | 'join'>('create');
-  const [createdRoom, setCreatedRoom] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [balance, setBalance] = useState<string | null>(null);
+  const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const { isDepositing, depositError, hasDeposited, makeDeposit, checkDeposit } = useDeposit(provider);
 
   useEffect(() => {
-    if (provider) {
-      checkDeposit();
+    const getWalletInfo = async () => {
+      if (provider) {
+        try {
+          const signer = await provider.getSigner();
+          const address = await signer.getAddress();
+          setWalletAddress(address);
+          const balance = await provider.getBalance(address);
+          setBalance(ethers.formatEther(balance));
+        } catch (error) {
+          console.error("Failed to get wallet info:", error);
+          setWalletAddress(null);
+          setBalance(null);
+        }
+      }
+    };
+    getWalletInfo();
+    checkDeposit();
+
+    if (provider?.provider) {
+      provider.provider.on('accountsChanged', getWalletInfo);
+      return () => {
+        provider.provider.removeListener('accountsChanged', getWalletInfo);
+      };
     }
   }, [provider, checkDeposit]);
 
-  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
-    e.preventDefault();
-    
-    if (!name.trim()) {
-      alert('Please enter your name');
-      return;
+  // Set current player when wallet is connected
+  useEffect(() => {
+    if (walletAddress) {
+      setCurrentPlayer({
+        id: walletAddress,
+        name: walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4),
+        joinedAt: Date.now()
+      });
+    } else {
+      setCurrentPlayer(null);
     }
-
-    if (!hasDeposited) {
-      alert('Please deposit 0.2 MON to start the game.');
-      return;
-    }
-
-    if (mode === 'join' && !room.trim()) {
-      alert('Please enter a room ID');
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      if (mode === 'create') {
-        const newRoom = generateRoomId();
-        setRoom(newRoom);
-        setCreatedRoom(newRoom);
-      }
-      // For 'join' mode, the room state is already set by the input field
-      // The usePresence hook will automatically join when the room is set.
-    } catch (error) {
-      console.error('Error joining room:', error);
-      alert('Failed to join room. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const displayPlayers = room ? players : [];
-  const currentPlayer = playerId ? players.find(p => p.id === playerId) : null;
-
-  if (room && currentPlayer) {
-    return <Game room={room} player={currentPlayer} players={players} provider={provider} />;
-  }
+  }, [walletAddress]);
 
   return (
     <div className="lobby">
       <WalletProviderSelector onProviderSelected={setProvider} />
-      <h1>Multiplayer Lobby</h1>
+      <h1>Monatype Royale</h1>
 
-      {provider && !hasDeposited && (
-        <div className="deposit-section">
-          <p>You need to deposit 0.2 MON to play.</p>
-          <button onClick={makeDeposit} disabled={isDepositing || !provider}>
-            {isDepositing ? 'Depositing...' : 'Deposit 0.2 MON'}
-          </button>
-          {depositError && <p className="error">{depositError}</p>}
-        </div>
-      )}
-      
-      {!room && (
-        <>
-          <div className="mode-selector">
-            <button
-              type="button"
-              onClick={() => { setMode('create'); setCreatedRoom(null); }}
-              className={`mode-button ${mode === 'create' ? 'active' : ''}`}
-            >
-              Create Game
-            </button>
-            <button
-              type="button"
-              onClick={() => { setMode('join'); setCreatedRoom(null); }}
-              className={`mode-button ${mode === 'join' ? 'active' : ''}`}
-            >
-              Join Game
-            </button>
+      {provider ? (
+        <div className="wallet-info">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5em', marginBottom: '1rem' }}>
+            <span style={{
+              display: 'inline-block',
+              width: '10px',
+              height: '10px',
+              borderRadius: '50%',
+              background: '#00ff00',
+              boxShadow: '0 0 8px 2px #00ff00',
+              animation: 'blinker 1s linear infinite'
+            }} />
+            <span>Connected to Monad Testnet</span>
+            <style>{`
+              @keyframes blinker {
+                50% { opacity: 0.2; }
+              }
+            `}</style>
           </div>
-
-          <form onSubmit={handleSubmit} className="join-form">
-            <div className="form-group">
-              <label htmlFor="name">Your Name:</label>
-              <input
-                id="name"
-                type="text"
-                placeholder="Enter your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                maxLength={20}
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-            
-            {mode === 'join' && (
-              <div className="form-group">
-                <label htmlFor="room">Room ID:</label>
-                <input
-                  id="room"
-                  type="text"
-                  placeholder="Enter room ID"
-                  value={room}
-                  onChange={(e) => setRoom(e.target.value.toUpperCase())}
-                  maxLength={10}
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
-            )}
-            
-            <button 
-              type="submit" 
-              className="submit-button"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Connecting...' : (mode === 'create' ? 'Create Room' : 'Join Room')}
-            </button>
-          </form>
-
-          {createdRoom && (
-            <div className="room-created">
-              <h3>🎉 Room Created Successfully!</h3>
-              <p>Share this Room ID with others:</p>
-              <div className="room-id-display">
-                <code>{createdRoom}</code>
-                <button 
-                  onClick={() => navigator.clipboard.writeText(createdRoom)}
-                  className="copy-button"
-                  title="Copy to clipboard"
-                >
-                  📋
-                </button>
-              </div>
-            </div>
+          {walletAddress ? (
+            <>
+              <p><strong>Address:</strong> {walletAddress}</p>
+              <p><strong>Balance:</strong> {balance} MON</p>
+              
+              {!hasDeposited ? (
+                <div>
+                  <button 
+                    onClick={makeDeposit}
+                    disabled={isDepositing}
+                    style={{
+                      padding: '10px 20px',
+                      fontSize: '16px',
+                      backgroundColor: '#4CAF50',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      cursor: isDepositing ? 'not-allowed' : 'pointer',
+                      opacity: isDepositing ? 0.6 : 1
+                    }}
+                  >
+                    {isDepositing ? 'Processing...' : 'Deposit 0.2 MON'}
+                  </button>
+                  {depositError && (
+                    <p style={{ color: 'red', marginTop: '10px' }}>{depositError}</p>
+                  )}
+                </div>
+              ) : (
+                <div style={{ color: 'green', fontWeight: 'bold' }}>
+                  ✓ Deposit completed! You can now join a game.
+                </div>
+              )}
+            </>
+          ) : (
+            <p>Could not retrieve wallet information. Please ensure your wallet is connected correctly.</p>
           )}
-        </>
+        </div>
+      ) : (
+        <p>Please connect your wallet to continue.</p>
       )}
 
-      {room && (
-        <div className="room-controls">
-          <button
-            type="button"
-            onClick={() => {
-              leaveRoom();
-              setRoom('');
-              setCreatedRoom(null);
-            }}
-            className="leave-button"
-          >
-            Leave Room
-          </button>
+      {/* Show Game component when player has deposited */}
+      {hasDeposited && currentPlayer && (
+        <div style={{ marginTop: '40px' }}>
+          <Game provider={provider} currentPlayer={currentPlayer} />
         </div>
       )}
-
-      <div className="player-list">
-        <h3>
-          {room ? `Players in Room ${room}:` : 'Players:'} 
-          <span className="player-count">({displayPlayers.length})</span>
-        </h3>
-        
-        {displayPlayers.length === 0 ? (
-          <p className="no-players">
-            {room ? 'Waiting for players to join...' : 'No players online'}
-          </p>
-        ) : (
-          <ul className="players">
-            {displayPlayers
-              .sort((a, b) => a.joinedAt - b.joinedAt)
-              .map((player) => (
-                <li key={player.id} className="player-item">
-                  <span className="player-name">{player.name}</span>
-                  <span className="join-time">
-                    {new Date(player.joinedAt).toLocaleTimeString()}
-                  </span>
-                </li>
-              ))}
-          </ul>
-        )}
-      </div>
     </div>
   );
 };

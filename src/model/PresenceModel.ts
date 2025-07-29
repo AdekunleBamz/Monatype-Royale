@@ -3,56 +3,47 @@ import { Model } from '@multisynq/client';
 export interface Player {
   id: string;
   name: string;
-  room: string;
   joinedAt: number;
 }
 
+export interface PresenceState {
+  players: Player[];
+  roomId: string;
+}
+
 export class PresenceModel extends Model {
-  // Use this.state for shared state across all clients in the same room.
-  // The state is automatically persisted and synchronized.
-  state!: {
-    players: Player[];
-  };
+  state!: PresenceState;
 
   init() {
-    // Initialize the state if it's not already set.
+    // Initialize state first to prevent undefined errors
+    this.state = this.state || { players: [], roomId: '' };
     this.state.players = this.state.players || [];
-    
-    this.subscribe('room', 'player:join', this.handlePlayerJoin);
-    this.subscribe('room', 'player:leave', this.handlePlayerLeave);
+    this.state.roomId = this.state.roomId || '';
+
+    this.subscribe('presence', 'player:join', this.handlePlayerJoin);
+    this.subscribe('presence', 'player:leave', this.handlePlayerLeave);
   }
 
   handlePlayerJoin(player: Player) {
-    // Use a Set for efficient duplicate checking.
-    const playerIds = new Set(this.state.players.map(p => p.id));
-    if (!playerIds.has(player.id)) {
+    if (!this.state.players.find(p => p.id === player.id)) {
       this.state.players.push(player);
+      this.publish('presence', 'state:updated', this.state);
     }
-    
-    // Publish the updated list of players for the specific room.
-    this.publish('room', 'presence:updated', this.getPlayersInRoom(player.room));
   }
 
-  handlePlayerLeave(player: Player) {
-    // Filter out the player who left.
-    this.state.players = this.state.players.filter(p => p.id !== player.id);
-    
-    // Publish the updated list of players for the room.
-    this.publish('room', 'presence:updated', this.getPlayersInRoom(player.room));
+  handlePlayerLeave(playerId: string) {
+    this.state.players = this.state.players.filter(p => p.id !== playerId);
+    this.publish('presence', 'state:updated', this.state);
   }
 
-  // Get players for a specific room.
-  getPlayersInRoom(room: string): Player[] {
-    // Ensure that we only return players for the requested room.
-    return this.state.players.filter(p => p.room === room);
+  joinRoom(roomId: string, player: Player) {
+    this.state.roomId = roomId;
+    this.handlePlayerJoin(player);
   }
 
-  // Get all active rooms from the shared state.
-  getActiveRooms(): string[] {
-    const rooms = new Set(this.state.players.map(p => p.room));
-    return Array.from(rooms);
+  leaveRoom(playerId: string) {
+    this.handlePlayerLeave(playerId);
   }
 }
 
-// Register the model for Multisynq
-PresenceModel.register('PresenceModel');
+PresenceModel.register('PresenceModel'); 
