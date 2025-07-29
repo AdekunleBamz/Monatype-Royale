@@ -27,50 +27,66 @@ const WalletProviderSelector: React.FC<{ onProviderSelected: (provider: ethers.B
 
   const handleProviderSelect = async (provider: any) => {
     try {
-      // First try to switch to Monad testnet
-      await provider.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0x279F' }], // 10143 in hex
+      // First request account access - this triggers the MetaMask popup
+      const accounts = await provider.request({
+        method: 'eth_requestAccounts',
       });
-    } catch (switchError: any) {
-      // This error code indicates that the chain has not been added to MetaMask.
-      if (switchError.code === 4902) {
-        try {
-          await provider.request({
-            method: 'wallet_addEthereumChain',
-            params: [
-              {
-                chainId: '0x279F',
-                chainName: 'Monad Testnet',
-                rpcUrls: ['https://testnet-rpc.monad.xyz'],
-                nativeCurrency: {
-                  name: 'MON',
-                  symbol: 'MON',
-                  decimals: 18,
+      
+      console.log('Accounts requested:', accounts);
+      
+      // Then try to switch to Monad testnet
+      try {
+        await provider.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x279F' }], // 10143 in hex
+        });
+        console.log('Successfully switched to Monad testnet');
+      } catch (switchError: any) {
+        console.log('Switch error:', switchError);
+        // This error code indicates that the chain has not been added to MetaMask.
+        if (switchError.code === 4902) {
+          try {
+            await provider.request({
+              method: 'wallet_addEthereumChain',
+              params: [
+                {
+                  chainId: '0x279F',
+                  chainName: 'Monad Testnet',
+                  rpcUrls: ['https://testnet-rpc.monad.xyz'],
+                  nativeCurrency: {
+                    name: 'MON',
+                    symbol: 'MON',
+                    decimals: 18,
+                  },
+                  blockExplorerUrls: ['https://explorer.testnet.monad.xyz'],
                 },
-                blockExplorerUrls: ['https://explorer.testnet.monad.xyz'],
-              },
-            ],
-          });
-        } catch (addError) {
-          console.error('Failed to add the network:', addError);
+              ],
+            });
+            console.log('Successfully added Monad testnet');
+          } catch (addError) {
+            console.error('Failed to add the network:', addError);
+            return;
+          }
+        } else {
+          console.error('Failed to switch the network:', switchError);
           return;
         }
-      } else {
-        console.error('Failed to switch the network:', switchError);
-        return;
       }
+      
+      // Create provider with ENS disabled for Monad testnet
+      const web3Provider = new ethers.BrowserProvider(provider, {
+        name: 'Monad Testnet',
+        chainId: 10143,
+        ensAddress: undefined // Disable ENS
+      });
+      
+      console.log('Provider created successfully');
+      setSelectedProvider(provider);
+      onProviderSelected(web3Provider);
+    } catch (error) {
+      console.error('Failed to connect wallet:', error);
+      alert('Failed to connect wallet. Please try again.');
     }
-    
-    // Create provider with ENS disabled for Monad testnet
-    const web3Provider = new ethers.BrowserProvider(provider, {
-      name: 'Monad Testnet',
-      chainId: 10143,
-      ensAddress: undefined // Disable ENS
-    });
-    
-    setSelectedProvider(provider);
-    onProviderSelected(web3Provider);
   };
 
   const handleDisconnect = () => {
