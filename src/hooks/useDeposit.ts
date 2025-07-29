@@ -1,17 +1,10 @@
 import { useState } from 'react';
 import { ethers } from 'ethers';
+import rewardsAbiJson from '../abi/MonatypeRewards.json';
 
-const rewardsContractAbi = [
-  "function deposit() payable",
-  "function deposits(address) view returns (uint256)"
-];
-
+const rewardsContractAbi = rewardsAbiJson.abi;
+const MONAD_CHAIN_ID = 10143;
 const rewardsContractAddress = import.meta.env.VITE_REWARDS_CONTRACT_ADDRESS;
-console.log("VITE_REWARDS_CONTRACT_ADDRESS:", import.meta.env.VITE_REWARDS_CONTRACT_ADDRESS);
-console.log("All env:", import.meta.env);
-if (!rewardsContractAddress) {
-  throw new Error("VITE_REWARDS_CONTRACT_ADDRESS is not set. Check your .env and restart the dev server.");
-}
 
 export const useDeposit = (provider: ethers.BrowserProvider | null) => {
   const [isDepositing, setIsDepositing] = useState(false);
@@ -21,6 +14,11 @@ export const useDeposit = (provider: ethers.BrowserProvider | null) => {
   const checkDeposit = async () => {
     if (!provider) return;
     try {
+      const network = await provider.getNetwork();
+      if (network.chainId !== MONAD_CHAIN_ID) {
+        setDepositError('Please connect your wallet to Monad testnet (chainId 10143).');
+        return;
+      }
       const signer = await provider.getSigner();
       const rewardsContract = new ethers.Contract(rewardsContractAddress, rewardsContractAbi, signer);
       const depositAmount = await rewardsContract.deposits(await signer.getAddress());
@@ -28,6 +26,11 @@ export const useDeposit = (provider: ethers.BrowserProvider | null) => {
         setHasDeposited(true);
       }
     } catch (err: any) {
+      if (err.message && err.message.includes('Block tracker destroyed')) {
+        setDepositError('MetaMask connection error. Please refresh the page and reconnect your wallet.');
+      } else {
+        setDepositError(err.reason || err.message || 'Failed to check deposit.');
+      }
       console.error("Failed to check deposit:", err);
     }
   };
@@ -37,19 +40,27 @@ export const useDeposit = (provider: ethers.BrowserProvider | null) => {
       setDepositError("Please connect your wallet first.");
       return;
     }
-
     setIsDepositing(true);
     setDepositError(null);
-
     try {
+      const network = await provider.getNetwork();
+      if (network.chainId !== MONAD_CHAIN_ID) {
+        setDepositError('Please connect your wallet to Monad testnet (chainId 10143).');
+        setIsDepositing(false);
+        return;
+      }
       const signer = await provider.getSigner();
       const rewardsContract = new ethers.Contract(rewardsContractAddress, rewardsContractAbi, signer);
       const tx = await rewardsContract.deposit({ value: ethers.parseEther("0.2") });
       await tx.wait();
       setHasDeposited(true);
     } catch (err: any) {
+      if (err.message && err.message.includes('Block tracker destroyed')) {
+        setDepositError('MetaMask connection error. Please refresh the page and reconnect your wallet.');
+      } else {
+        setDepositError(err.reason || err.message || 'Failed to make deposit.');
+      }
       console.error("Failed to make deposit:", err);
-      setDepositError(err.reason || "Failed to make deposit.");
     } finally {
       setIsDepositing(false);
     }

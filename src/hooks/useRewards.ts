@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import rewardsContractArtifact from '../../artifacts/contracts/Rewards.sol/MonatypeRewards.json';
+import rewardsAbiJson from '../abi/MonatypeRewards.json';
 import { Player } from '../model/PresenceModel';
 
-const rewardsContractAbi = rewardsContractArtifact.abi;
+const rewardsContractAbi = rewardsAbiJson.abi;
 const MONAD_CHAIN_ID = 10143;
 const rewardsContractAddress = import.meta.env.VITE_REWARDS_CONTRACT_ADDRESS;
 
