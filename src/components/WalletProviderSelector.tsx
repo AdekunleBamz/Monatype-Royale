@@ -33,8 +33,22 @@ const WalletProviderSelector: React.FC<{ onProviderSelected: (provider: ethers.B
 
   if (selectedProvider) {
     return (
-      <div>
-        <p>Connected to {selectedProvider.isMetaMask ? 'MetaMask' : 'another wallet'}</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5em' }}>
+        <span style={{
+          display: 'inline-block',
+          width: '10px',
+          height: '10px',
+          borderRadius: '50%',
+          background: '#00ff00',
+          boxShadow: '0 0 8px 2px #00ff00',
+          animation: 'blinker 1s linear infinite'
+        }} />
+        <span>Connected to Monad Testnet</span>
+        <style>{`
+          @keyframes blinker {
+            50% { opacity: 0.2; }
+          }
+        `}</style>
       </div>
     );
   }
@@ -47,7 +61,7 @@ const WalletProviderSelector: React.FC<{ onProviderSelected: (provider: ethers.B
           {providers.map((provider, index) => (
             <li key={index}>
               <button onClick={() => handleProviderSelect(provider)}>
-                {provider.isMetaMask ? 'MetaMask' : `Wallet ${index + 1}`}
+                Connect to Wallet
               </button>
             </li>
           ))}

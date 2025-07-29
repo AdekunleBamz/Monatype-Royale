@@ -1,22 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePresence } from '../hooks/usePresence';
 import { Player } from '../model/PresenceModel';
+import { Game } from './Game';
+import WalletProviderSelector from './WalletProviderSelector';
+import { ethers } from 'ethers';
+import { useDeposit } from '../hooks/useDeposit';
 
 const generateRoomId = (): string => Math.random().toString(36).substring(2, 8).toUpperCase();
 
 export const Lobby: React.FC = () => {
   const [name, setName] = useState<string>('');
   const [room, setRoom] = useState<string>('');
-  const { players, isConnected, error, leaveRoom } = usePresence(room, name);
+  const { players, playerId, isConnected, error, leaveRoom } = usePresence(room, name);
   const [mode, setMode] = useState<'create' | 'join'>('create');
   const [createdRoom, setCreatedRoom] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
+  const { isDepositing, depositError, hasDeposited, makeDeposit, checkDeposit } = useDeposit(provider);
+
+  useEffect(() => {
+    if (provider) {
+      checkDeposit();
+    }
+  }, [provider, checkDeposit]);
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     
     if (!name.trim()) {
       alert('Please enter your name');
+      return;
+    }
+
+    if (!hasDeposited) {
+      alert('Please deposit 0.2 MON to start the game.');
       return;
     }
 
@@ -44,10 +61,26 @@ export const Lobby: React.FC = () => {
   };
 
   const displayPlayers = room ? players : [];
+  const currentPlayer = playerId ? players.find(p => p.id === playerId) : null;
+
+  if (room && currentPlayer) {
+    return <Game room={room} player={currentPlayer} players={players} provider={provider} />;
+  }
 
   return (
     <div className="lobby">
+      <WalletProviderSelector onProviderSelected={setProvider} />
       <h1>Multiplayer Lobby</h1>
+
+      {provider && !hasDeposited && (
+        <div className="deposit-section">
+          <p>You need to deposit 0.2 MON to play.</p>
+          <button onClick={makeDeposit} disabled={isDepositing || !provider}>
+            {isDepositing ? 'Depositing...' : 'Deposit 0.2 MON'}
+          </button>
+          {depositError && <p className="error">{depositError}</p>}
+        </div>
+      )}
       
       {!room && (
         <>

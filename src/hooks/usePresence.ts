@@ -7,6 +7,7 @@ export const usePresence = (room: string, playerName: string) => {
   const [session, setSession] = useState<MultisynqSession<View> | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [playerId, setPlayerId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!room || !playerName) {
@@ -16,6 +17,7 @@ export const usePresence = (room: string, playerName: string) => {
         setSession(null);
       }
       setIsConnected(false);
+      setPlayerId(null);
       return;
     }
 
@@ -33,6 +35,7 @@ export const usePresence = (room: string, playerName: string) => {
         });
 
         setSession(newSession);
+        setPlayerId(newSession.id);
         setIsConnected(true); // Assuming connection is successful if no error is thrown
 
         const view = newSession.view;
@@ -89,8 +92,9 @@ export const usePresence = (room: string, playerName: string) => {
       setSession(null);
       setIsConnected(false);
       setPlayers([]);
+      setPlayerId(null);
     }
   };
 
-  return { players, isConnected, error, leaveRoom };
+  return { players, playerId, isConnected, error, leaveRoom };
 };
