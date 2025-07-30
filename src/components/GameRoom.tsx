@@ -50,8 +50,9 @@ export const GameRoom: React.FC<GameRoomProps> = ({ provider, walletAddress }) =
       alert('Please enter a room code');
       return;
     }
+    console.log('Joining room with code:', joinCode.toUpperCase());
     setRoomCode(joinCode.toUpperCase());
-    setMode('join');
+    setMode('create'); // Change to 'create' mode to show the game room
   };
 
   const startGame = () => {
@@ -148,9 +149,13 @@ export const GameRoom: React.FC<GameRoomProps> = ({ provider, walletAddress }) =
   }
 
   if (mode === 'create') {
+    // Check if this room was created by this user or joined
+    const isRoomCreator = roomCode && roomCode.length > 0;
+    const isJoinedRoom = joinCode && joinCode.length > 0;
+    
     return (
       <div style={{ padding: '20px', textAlign: 'center' }}>
-        <h2>Game Room Created</h2>
+        <h2>{isJoinedRoom ? 'Joined Game Room' : 'Game Room Created'}</h2>
         <div style={{ 
           backgroundColor: '#f8f9fa',
           padding: '20px', 
@@ -162,9 +167,36 @@ export const GameRoom: React.FC<GameRoomProps> = ({ provider, walletAddress }) =
             Room Code: {roomCode}
           </h3>
           <p style={{ color: '#000000', fontWeight: 'bold', fontSize: '16px' }}>
-            Share this code with other players to join your game!
+            {isJoinedRoom ? 'You have successfully joined the game room!' : 'Share this code with other players to join your game!'}
           </p>
         </div>
+        
+        {/* Connection Status */}
+        {error && (
+          <div style={{ 
+            backgroundColor: '#ffebee', 
+            color: '#c62828', 
+            padding: '10px', 
+            borderRadius: '5px', 
+            marginBottom: '10px',
+            border: '1px solid #ef5350'
+          }}>
+            Connection Error: {error}
+          </div>
+        )}
+        
+        {!isConnected && !error && (
+          <div style={{ 
+            backgroundColor: '#fff3e0', 
+            color: '#ef6c00', 
+            padding: '10px', 
+            borderRadius: '5px', 
+            marginBottom: '10px',
+            border: '1px solid #ff9800'
+          }}>
+            Connecting to room...
+          </div>
+        )}
         
         <div style={{ marginTop: '20px' }}>
           <h3>Players in Room:</h3>
@@ -179,7 +211,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({ provider, walletAddress }) =
           }}>
             {players.length === 0 ? (
               <p style={{ color: '#000000', textAlign: 'center', margin: '0' }}>
-                Waiting for players to join...
+                {isConnected ? 'Waiting for players to join...' : 'Connecting to room...'}
               </p>
             ) : (
               players.map(player => (

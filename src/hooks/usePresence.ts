@@ -10,7 +10,9 @@ export const usePresence = (roomId: string, playerName: string) => {
   const [session, setSession] = useState<MultisynqSession<View> | null>(null);
 
   useEffect(() => {
+    console.log('usePresence effect triggered with roomId:', roomId, 'playerName:', playerName);
     if (!roomId || !playerName) {
+      console.log('Missing roomId or playerName, skipping connection');
       return;
     }
 
