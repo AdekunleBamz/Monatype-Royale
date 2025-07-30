@@ -87,25 +87,8 @@ export const useGameState = (roomId: string, currentPlayer: Player | null) => {
   const startGame = (players: Player[]) => {
     if (session && session.view) {
       console.log('Starting game with players:', players);
-      const prompts = [
-        "My crypto dog dances better than your memecoin",
-        "Left-curve liquidity lords live lavishly",
-        "DeFi degens dream of decentralized dominance",
-        "Yield farming feels like financial freedom",
-        "Smart contracts solve society's struggles",
-        "Blockchain believers build better businesses",
-        "Tokenomics teach traders to think twice",
-        "Web3 warriors win with wisdom",
-        "Metaverse magic makes money move",
-        "NFT ninjas navigate network nodes"
-      ];
-      const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
-      
-      session.view.publish('game', 'start', {
-        players,
-        prompt: randomPrompt,
-        startTime: Date.now() + 5000 // Start in 5 seconds
-      });
+      // Only send the array of players, as expected by GameModel.handleGameStart
+      session.view.publish('game', 'start', players);
     } else {
       console.error('Cannot start game: session or session.view is null');
     }
