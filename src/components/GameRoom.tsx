@@ -19,10 +19,6 @@ export const GameRoom: React.FC<GameRoomProps> = ({ provider, walletAddress }) =
   const [roomCode, setRoomCode] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [joinCode, setJoinCode] = useState('');
-  const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
-  const [gameStarted, setGameStarted] = useState(false);
-  const [winner, setWinner] = useState<Player | null>(null);
-  const [loser, setLoser] = useState<Player | null>(null);
 
   const { isDepositing, depositError, hasDeposited, makeDeposit, checkDeposit } = useDeposit(provider);
   const { players, playerId, isConnected, error, leaveRoom } = usePresence(roomCode, playerName);
@@ -149,8 +145,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({ provider, walletAddress }) =
   }
 
   if (mode === 'create') {
-    // Check if this room was created by this user or joined
-    const isRoomCreator = roomCode && roomCode.length > 0;
+    // Check if this room was joined (not created)
     const isJoinedRoom = joinCode && joinCode.length > 0;
     
     return (

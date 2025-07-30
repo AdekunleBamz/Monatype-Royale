@@ -26,6 +26,7 @@ export const usePresence = (roomId: string, playerName: string) => {
           throw new Error('Multisynq API key not found');
         }
         
+        console.log('Attempting to join presence room:', `presence-${roomId}`);
         const newSession = await Session.join({
           apiKey,
           appId: import.meta.env.VITE_MULTISYNQ_APP_ID,
@@ -47,8 +48,8 @@ export const usePresence = (roomId: string, playerName: string) => {
         setIsConnected(true);
         setError(null);
 
-        // Set initial player
-        setPlayers([currentPlayer]);
+        // Don't set initial player here - wait for the broadcast to be received
+        // This prevents overwriting existing players in the room
 
         // Subscribe to room events
         newSession.view.subscribe('presence', 'player:join', (newPlayer: Player) => {
@@ -59,6 +60,14 @@ export const usePresence = (roomId: string, playerName: string) => {
             }
             return prev;
           });
+        });
+
+        // Subscribe to state updates to get existing players
+        newSession.view.subscribe('presence', 'state:updated', (state: any) => {
+          console.log('Presence state updated:', state);
+          if (state && state.players) {
+            setPlayers(state.players);
+          }
         });
 
         newSession.view.subscribe('presence', 'player:leave', (playerId: string) => {
