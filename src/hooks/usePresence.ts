@@ -48,8 +48,13 @@ export const usePresence = (roomId: string, playerName: string) => {
         setIsConnected(true);
         setError(null);
 
-        // Don't set initial player here - wait for the broadcast to be received
-        // This prevents overwriting existing players in the room
+        // Add current player to the list immediately
+        setPlayers(prev => {
+          if (!prev.find(p => p.id === currentPlayer.id)) {
+            return [...prev, currentPlayer];
+          }
+          return prev;
+        });
 
         // Subscribe to room events
         newSession.view.subscribe('presence', 'player:join', (newPlayer: Player) => {

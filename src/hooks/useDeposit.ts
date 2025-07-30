@@ -92,5 +92,9 @@ export const useDeposit = (provider: ethers.BrowserProvider | null) => {
     }
   };
 
-  return { isDepositing, depositError, hasDeposited, makeDeposit, checkDeposit };
+  const resetDeposit = () => {
+    setHasDeposited(false);
+  };
+
+  return { isDepositing, depositError, hasDeposited, makeDeposit, checkDeposit, resetDeposit };
 };

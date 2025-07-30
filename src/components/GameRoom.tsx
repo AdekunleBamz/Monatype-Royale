@@ -19,8 +19,11 @@ export const GameRoom: React.FC<GameRoomProps> = ({ provider, walletAddress }) =
   const [roomCode, setRoomCode] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [joinCode, setJoinCode] = useState('');
+  const [gameStarted, setGameStarted] = useState(false);
+  const [winner, setWinner] = useState<Player | null>(null);
+  const [loser, setLoser] = useState<Player | null>(null);
 
-  const { isDepositing, depositError, hasDeposited, makeDeposit, checkDeposit } = useDeposit(provider);
+  const { isDepositing, depositError, hasDeposited, makeDeposit, checkDeposit, resetDeposit } = useDeposit(provider);
   const { players, playerId, isConnected, error, leaveRoom } = usePresence(roomCode, playerName);
 
   useEffect(() => {
@@ -36,6 +39,11 @@ export const GameRoom: React.FC<GameRoomProps> = ({ provider, walletAddress }) =
   }, [provider, checkDeposit]);
 
   const handleCreateGame = () => {
+    // Check if user has deposited for this game
+    if (!hasDeposited) {
+      alert('You need to deposit 0.2 MON to create a new game');
+      return;
+    }
     const newRoomCode = generateRoomCode();
     setRoomCode(newRoomCode);
     setMode('create');
@@ -44,6 +52,11 @@ export const GameRoom: React.FC<GameRoomProps> = ({ provider, walletAddress }) =
   const handleJoinGame = () => {
     if (!joinCode.trim()) {
       alert('Please enter a room code');
+      return;
+    }
+    // Check if user has deposited for this game
+    if (!hasDeposited) {
+      alert('You need to deposit 0.2 MON to join a game');
       return;
     }
     console.log('Joining room with code:', joinCode.toUpperCase());
@@ -72,6 +85,7 @@ export const GameRoom: React.FC<GameRoomProps> = ({ provider, walletAddress }) =
     setGameStarted(false);
     setWinner(null);
     setLoser(null);
+    resetDeposit(); // Reset deposit status for new game
     leaveRoom();
   };
 
@@ -319,16 +333,19 @@ export const GameRoom: React.FC<GameRoomProps> = ({ provider, walletAddress }) =
   }
 
   if (mode === 'game') {
+    // Find current player from the players list
+    const currentPlayer = players.find(p => p.id === playerId) || null;
+    
     return (
       <div>
-                            <Game
-                      provider={provider}
-                      currentPlayer={currentPlayer}
-                      players={players}
-                      roomId={roomCode}
-                      onGameFinish={handleGameFinish}
-                      onReset={resetGame}
-                    />
+        <Game
+          provider={provider}
+          currentPlayer={currentPlayer}
+          players={players}
+          roomId={roomCode}
+          onGameFinish={handleGameFinish}
+          onReset={resetGame}
+        />
       </div>
     );
   }
