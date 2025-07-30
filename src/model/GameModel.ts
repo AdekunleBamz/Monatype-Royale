@@ -20,6 +20,14 @@ export class GameModel extends Model {
   state!: GameState;
 
   init() {
+    // Initialize state first to prevent undefined errors
+    this.state = this.state || {
+      prompt: 'The quick brown fox jumps over the lazy dog.',
+      players: [],
+      status: 'waiting',
+      winner: null
+    };
+    
     this.state.prompt = this.state.prompt || 'The quick brown fox jumps over the lazy dog.';
     this.state.players = this.state.players || [];
     this.state.status = this.state.status || 'waiting';

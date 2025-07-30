@@ -13,16 +13,37 @@ const WalletProviderSelector: React.FC<{ onProviderSelected: (provider: ethers.B
 
   useEffect(() => {
     const detectProviders = () => {
-      const detectedProviders = window.ethereum?.providers || (window.ethereum ? [window.ethereum] : []);
-      setProviders(detectedProviders);
+      try {
+        const detectedProviders = window.ethereum?.providers || (window.ethereum ? [window.ethereum] : []);
+        setProviders(detectedProviders);
+      } catch (error) {
+        console.warn('Error detecting providers:', error);
+        // Fallback to basic detection
+        if (window.ethereum) {
+          setProviders([window.ethereum]);
+        } else {
+          setProviders([]);
+        }
+      }
     };
 
     detectProviders();
-    window.ethereum?.on('providersChanged', detectProviders);
-
-    return () => {
-      window.ethereum?.removeListener('providersChanged', detectProviders);
-    };
+    
+    // Only add listener if it exists
+    if (window.ethereum?.on) {
+      try {
+        window.ethereum.on('providersChanged', detectProviders);
+        return () => {
+          try {
+            window.ethereum?.removeListener('providersChanged', detectProviders);
+          } catch (error) {
+            console.warn('Error removing providersChanged listener:', error);
+          }
+        };
+      } catch (error) {
+        console.warn('Error adding providersChanged listener:', error);
+      }
+    }
   }, []);
 
   const handleProviderSelect = async (provider: any) => {
@@ -65,10 +86,12 @@ const WalletProviderSelector: React.FC<{ onProviderSelected: (provider: ethers.B
             console.log('Successfully added Monad testnet');
           } catch (addError) {
             console.error('Failed to add the network:', addError);
+            alert('Failed to add Monad testnet to your wallet. Please try again.');
             return;
           }
         } else {
           console.error('Failed to switch the network:', switchError);
+          alert('Failed to switch to Monad testnet. Please try again.');
           return;
         }
       }
@@ -83,9 +106,13 @@ const WalletProviderSelector: React.FC<{ onProviderSelected: (provider: ethers.B
       console.log('Provider created successfully');
       setSelectedProvider(provider);
       onProviderSelected(web3Provider);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to connect wallet:', error);
-      alert('Failed to connect wallet. Please try again.');
+      if (error.code === 4001) {
+        alert('Connection rejected by user. Please try again.');
+      } else {
+        alert('Failed to connect wallet. Please try again.');
+      }
     }
   };
 

@@ -41,6 +41,7 @@ export const useGameState = (roomId: string, currentPlayer: Player | null) => {
           throw new Error('Multisynq API key not found');
         }
         
+        console.log('Attempting to join game session:', `game-${roomId}`);
         const newSession = await Session.join({
           apiKey,
           appId: import.meta.env.VITE_MULTISYNQ_APP_ID,

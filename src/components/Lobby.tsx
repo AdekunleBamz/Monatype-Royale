@@ -36,10 +36,20 @@ export const Lobby: React.FC = () => {
                     if (provider?.provider) {
                   // Use the correct event listener for Ethers.js v6
                   const handleAccountsChanged = () => getWalletInfo();
-                  provider.provider.on('accountsChanged', handleAccountsChanged);
-                  return () => {
-                    provider.provider.removeListener('accountsChanged', handleAccountsChanged);
-                  };
+                  try {
+                    provider.provider.on('accountsChanged', handleAccountsChanged);
+                    return () => {
+                      try {
+                        provider.provider.removeListener('accountsChanged', handleAccountsChanged);
+                      } catch (error) {
+                        console.warn('Error removing accountsChanged listener:', error);
+                      }
+                    };
+                  } catch (error) {
+                    console.warn('Error adding accountsChanged listener:', error);
+                    // Fallback: just return the getWalletInfo function
+                    return () => {};
+                  }
                 }
   }, [provider]);
 
