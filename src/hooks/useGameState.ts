@@ -84,7 +84,8 @@ export const useGameState = (roomId: string, currentPlayer: Player | null) => {
   }, [roomId, currentPlayer]);
 
   const startGame = (players: Player[]) => {
-    if (session) {
+    if (session && session.view) {
+      console.log('Starting game with players:', players);
       const prompts = [
         "My crypto dog dances better than your memecoin",
         "Left-curve liquidity lords live lavishly",
@@ -104,11 +105,13 @@ export const useGameState = (roomId: string, currentPlayer: Player | null) => {
         prompt: randomPrompt,
         startTime: Date.now() + 5000 // Start in 5 seconds
       });
+    } else {
+      console.error('Cannot start game: session or session.view is null');
     }
   };
 
   const updatePlayerProgress = (playerId: string, progress: number, wpm: number, accuracy: number) => {
-    if (session) {
+    if (session && session.view) {
       session.view.publish('game', 'player:update', {
         playerId,
         progress,
@@ -119,7 +122,7 @@ export const useGameState = (roomId: string, currentPlayer: Player | null) => {
   };
 
   const finishGame = (winner: Player, loser: Player) => {
-    if (session) {
+    if (session && session.view) {
       session.view.publish('game', 'finish', {
         winner,
         loser,
@@ -129,7 +132,7 @@ export const useGameState = (roomId: string, currentPlayer: Player | null) => {
   };
 
   const resetGame = () => {
-    if (session) {
+    if (session && session.view) {
       session.view.publish('game', 'reset', {});
     }
   };

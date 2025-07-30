@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { usePresence } from '../hooks/usePresence';
 import { useDeposit } from '../hooks/useDeposit';
+import { useGameState } from '../hooks/useGameState';
 import { Game } from './Game';
 import { Player } from '../model/PresenceModel';
 
@@ -25,6 +26,10 @@ export const GameRoom: React.FC<GameRoomProps> = ({ provider, walletAddress }) =
 
   const { isDepositing, depositError, hasDeposited, makeDeposit, checkDeposit, resetDeposit } = useDeposit(provider);
   const { players, playerId, isConnected, error, leaveRoom } = usePresence(roomCode, playerName);
+  
+  // Get current player for game state
+  const currentPlayer = players.find(p => p.id === playerId) || null;
+  const { startGame: startGameState } = useGameState(roomCode, currentPlayer);
 
   useEffect(() => {
     if (walletAddress) {
@@ -69,6 +74,8 @@ export const GameRoom: React.FC<GameRoomProps> = ({ provider, walletAddress }) =
       alert('Need at least 2 players to start the game');
       return;
     }
+    console.log('Starting game with players:', players);
+    startGameState(players);
     setGameStarted(true);
     setMode('game');
   };
@@ -333,9 +340,6 @@ export const GameRoom: React.FC<GameRoomProps> = ({ provider, walletAddress }) =
   }
 
   if (mode === 'game') {
-    // Find current player from the players list
-    const currentPlayer = players.find(p => p.id === playerId) || null;
-    
     return (
       <div>
         <Game

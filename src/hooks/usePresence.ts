@@ -60,9 +60,12 @@ export const usePresence = (roomId: string, playerName: string) => {
         newSession.view.subscribe('presence', 'player:join', (newPlayer: Player) => {
           console.log('Player joined:', newPlayer);
           setPlayers(prev => {
-            if (!prev.find(p => p.id === newPlayer.id)) {
+            const existingPlayer = prev.find(p => p.id === newPlayer.id);
+            if (!existingPlayer) {
+              console.log('Adding new player to list:', newPlayer.name);
               return [...prev, newPlayer];
             }
+            console.log('Player already exists:', existingPlayer.name);
             return prev;
           });
         });
@@ -71,6 +74,7 @@ export const usePresence = (roomId: string, playerName: string) => {
         newSession.view.subscribe('presence', 'state:updated', (state: any) => {
           console.log('Presence state updated:', state);
           if (state && state.players) {
+            console.log('Setting players from state:', state.players.length, 'players');
             setPlayers(state.players);
           }
         });
@@ -81,17 +85,25 @@ export const usePresence = (roomId: string, playerName: string) => {
         });
 
         // Broadcast our presence
-        newSession.view.publish('presence', 'player:join', currentPlayer);
+        if (newSession && newSession.view) {
+          newSession.view.publish('presence', 'player:join', currentPlayer);
+        }
 
         // Set up periodic presence update
         const interval = setInterval(() => {
-          newSession.view.publish('presence', 'player:heartbeat', currentPlayer);
+          if (newSession && newSession.view) {
+            newSession.view.publish('presence', 'player:heartbeat', currentPlayer);
+          }
         }, 30000); // Every 30 seconds
 
         return () => {
           clearInterval(interval);
-          newSession.view.publish('presence', 'player:leave', currentPlayer.id);
-          newSession.leave();
+          if (newSession && newSession.view) {
+            newSession.view.publish('presence', 'player:leave', currentPlayer.id);
+          }
+          if (newSession) {
+            newSession.leave();
+          }
         };
       } catch (err: any) {
         console.error('Failed to connect to Multisynq:', err);
@@ -107,7 +119,7 @@ export const usePresence = (roomId: string, playerName: string) => {
   }, [roomId, playerName]);
 
   const leaveRoom = async () => {
-    if (session) {
+    if (session && session.view) {
       try {
         session.view.publish('presence', 'player:leave', playerId);
         session.leave();
